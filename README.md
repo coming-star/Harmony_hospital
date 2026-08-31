@@ -28,7 +28,43 @@ group-12-repo/
 
 ## 快速开始
 
-（待补充）
+### 环境要求
+
+- JDK 17、Maven 3.9+
+- MySQL 8.0+（本地默认 `root/123456`，见 `Hos_App/his-springboot/src/main/resources/application.yml`）
+- Node.js 18+（管理端）
+
+### 1. 初始化数据库
+
+```bash
+mysql -u root -p < Hos_App/his-springboot/src/main/resources/db/01_schema.sql
+mysql -u root -p < Hos_App/his-springboot/src/main/resources/db/02_demo_seed.sql   # 可选，导入演示数据
+```
+
+演示数据包含管理员账号 `admin / admin123` 和患者账号（手机号 `13800000002`~`13800000005`，密码均为 `password`）。
+
+### 2. 启动后端
+
+```bash
+cd Hos_App/his-springboot
+mvn spring-boot:run
+```
+
+启动成功后访问 `http://localhost:8081/doc.html`（Knife4j 接口文档），能看到接口列表即说明后端已就绪。
+
+### 3. 启动管理端
+
+```bash
+cd Hos_App/his-web
+npm install
+npm run dev
+```
+
+按终端提示打开本地地址（通常是 `http://localhost:5173`），用 `admin / admin123` 登录。
+
+### 4. 移动端
+
+`Hos_App/his-harmony` 尚未搭建，见项目结构说明。
 
 ## 核心功能
 
