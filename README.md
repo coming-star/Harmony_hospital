@@ -20,7 +20,7 @@ group-12-repo/
 ├── Hos_App/
 │   ├── his-springboot/            # 后端：Spring Boot 3 + MyBatis-Plus
 │   │   └── src/main/resources/db/ # 建库与演示数据脚本
-│   ├── his-web/                   # 管理端：Vue 3 + Vite + Element Plus（待搭建）
+│   ├── his-web/                   # 管理端：Vue 3 + Vite + Element Plus + Pinia
 │   └── his-harmony/                # 移动端：HarmonyOS / ArkTS（待搭建）
 ├── gp12-项目进度计划跟踪表.xlsx
 └── README.md
