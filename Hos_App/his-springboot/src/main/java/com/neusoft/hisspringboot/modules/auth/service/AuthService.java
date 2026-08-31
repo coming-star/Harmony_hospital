@@ -8,6 +8,7 @@ import com.neusoft.hisspringboot.modules.auth.dto.LoginResponse;
 import com.neusoft.hisspringboot.modules.user.entity.SysUser;
 import com.neusoft.hisspringboot.modules.user.mapper.SysUserMapper;
 import com.neusoft.hisspringboot.security.JwtUtil;
+import com.neusoft.hisspringboot.security.TokenBlacklistService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,6 +25,12 @@ public class AuthService {
     private final SysUserMapper sysUserMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final TokenBlacklistService tokenBlacklistService;
+
+    public void logout(String token) {
+        JwtUtil.TokenMeta meta = jwtUtil.extractMeta(token);
+        tokenBlacklistService.blacklist(meta.jti(), meta.expireAtEpochMillis());
+    }
 
     public LoginResponse adminLogin(AdminLoginRequest request) {
         SysUser user = sysUserMapper.selectOne(

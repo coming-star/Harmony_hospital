@@ -4,11 +4,16 @@ import com.neusoft.hisspringboot.common.ApiResponse;
 import com.neusoft.hisspringboot.modules.auth.dto.AdminLoginRequest;
 import com.neusoft.hisspringboot.modules.auth.dto.LoginResponse;
 import com.neusoft.hisspringboot.modules.auth.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Tag(name = "管理员认证", description = "系统管理员后台登录接口")
 @RestController
@@ -24,5 +29,26 @@ public class AdminAuthController {
             @Valid @RequestBody AdminLoginRequest request
     ) {
         return ApiResponse.success(authService.adminLogin(request));
+    }
+
+    @Operation(
+            summary = "管理员登出",
+            description = "将当前 Token 加入黑名单，Token 到期前不可再使用",
+            security = {@SecurityRequirement(name = HttpHeaders.AUTHORIZATION)}
+    )
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout(HttpServletRequest request) {
+        authService.logout(extractBearerToken(request));
+        return ApiResponse.success();
+    }
+
+    private String extractBearerToken(HttpServletRequest request) {
+        String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
+
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "请先登录或 Token 已失效");
+        }
+
+        return authorization.substring(7);
     }
 }

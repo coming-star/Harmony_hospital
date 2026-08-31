@@ -21,6 +21,7 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -37,6 +38,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             LoginUser loginUser = jwtUtil.parseToken(authorization.substring(7));
+
+            if (tokenBlacklistService.isBlacklisted(loginUser.jti())) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write(
+                        "{\"code\":401,\"message\":\"Token已登出\",\"data\":null}"
+                );
+                return;
+            }
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(

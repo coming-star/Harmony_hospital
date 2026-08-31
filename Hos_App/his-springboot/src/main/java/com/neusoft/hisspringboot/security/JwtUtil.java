@@ -24,6 +24,7 @@ public class JwtUtil {
         Date expireAt = new Date(now.getTime() + expireHours * 60 * 60 * 1000);
 
         return Jwts.builder()
+                .id(java.util.UUID.randomUUID().toString())
                 .subject(String.valueOf(userId))
                 .claim("userType", userType)
                 .issuedAt(now)
@@ -33,19 +34,35 @@ public class JwtUtil {
     }
 
     public LoginUser parseToken(String token) {
-        Claims claims = Jwts.parser()
+        Claims claims = parseClaims(token);
+
+        return new LoginUser(
+                Long.valueOf(claims.getSubject()),
+                claims.get("userType", String.class),
+                claims.getId()
+        );
+    }
+
+    /**
+     * 供登出使用：取出 jti 与到期时间写入黑名单，无需还原完整 LoginUser。
+     */
+    public TokenMeta extractMeta(String token) {
+        Claims claims = parseClaims(token);
+        return new TokenMeta(claims.getId(), claims.getExpiration().getTime());
+    }
+
+    private Claims parseClaims(String token) {
+        return Jwts.parser()
                 .verifyWith(secretKey())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-
-        return new LoginUser(
-                Long.valueOf(claims.getSubject()),
-                claims.get("userType", String.class)
-        );
     }
 
     private SecretKey secretKey() {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public record TokenMeta(String jti, long expireAtEpochMillis) {
     }
 }

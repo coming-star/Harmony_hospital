@@ -5,11 +5,16 @@ import com.neusoft.hisspringboot.modules.auth.dto.AppLoginRequest;
 import com.neusoft.hisspringboot.modules.auth.dto.AppRegisterRequest;
 import com.neusoft.hisspringboot.modules.auth.dto.LoginResponse;
 import com.neusoft.hisspringboot.modules.auth.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Tag(name = "患者认证", description = "鸿蒙 App 患者注册与登录接口")
 @RestController
@@ -33,5 +38,26 @@ public class AppAuthController {
             @Valid @RequestBody AppLoginRequest request
     ) {
         return ApiResponse.success(authService.appLogin(request));
+    }
+
+    @Operation(
+            summary = "患者登出",
+            description = "将当前 Token 加入黑名单，Token 到期前不可再使用",
+            security = {@SecurityRequirement(name = HttpHeaders.AUTHORIZATION)}
+    )
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout(HttpServletRequest request) {
+        authService.logout(extractBearerToken(request));
+        return ApiResponse.success();
+    }
+
+    private String extractBearerToken(HttpServletRequest request) {
+        String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
+
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "请先登录或 Token 已失效");
+        }
+
+        return authorization.substring(7);
     }
 }
