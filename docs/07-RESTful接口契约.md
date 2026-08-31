@@ -53,12 +53,19 @@
 
 ### 3.1 鉴权（B 负责实现）
 
-| 方法 | 路径 | 说明 | 请求体 | 成功响应 |
+> 路径以实际实现为准：患者端在 `/api/app/auth/**` 下，管理端在 `/api/admin/auth/**` 下；两组前缀也是 `SecurityConfig` 角色隔离（`ROLE_PATIENT` / `ROLE_ADMIN`）的边界，因此不合并为不带角色前缀的 `/api/auth/**`。
+
+| 方法 | 路径 | 说明 | 请求体 | 成功响应 `data` |
 | --- | --- | --- | --- | --- |
-| POST | `/api/auth/register` | 患者注册 | `{phone, password, nickname}` | `{userId}` |
-| POST | `/api/auth/login` | 患者登录 | `{phone, password}` | `{token, expiresIn, user}` |
-| POST | `/api/auth/admin/login` | 管理员登录 | `{username, password}` | `{token, expiresIn, user}` |
-| POST | `/api/auth/logout` | 登出（Token 加入黑名单） | - | - |
+| POST | `/api/app/auth/register` | 患者注册（成功后自动登录） | `{phone, password, nickname}` | `LoginResponse` |
+| POST | `/api/app/auth/login` | 患者登录 | `{phone, password}` | `LoginResponse` |
+| POST | `/api/app/auth/logout` | 患者登出（需 Bearer Token，Token 加入黑名单） | - | 空 |
+| POST | `/api/admin/auth/login` | 管理员登录 | `{username, password}` | `LoginResponse` |
+| POST | `/api/admin/auth/logout` | 管理员登出（需 Bearer Token，Token 加入黑名单） | - | 空 |
+
+`LoginResponse` 字段：`{accessToken, tokenType, userId, nickname, userType}`；`tokenType` 固定为 `Bearer`，请求头需拼接为 `Authorization: Bearer {accessToken}`。
+
+`register`/`login`/管理员 `login` 免鉴权（`permitAll`）；`logout` 必须携带有效 Token（分别落入 `ROLE_PATIENT`/`ROLE_ADMIN` 鉴权范围)。登出后的 Token 立即失效，重复调用返回 401。
 
 失败：手机号重复 `409001`；账号密码错误 `401`（不区分"账号不存在"与"密码错误"，避免用户枚举）。
 
@@ -75,13 +82,15 @@
 
 失败：身份证重复绑定 `409002`；就诊人存在有效订单时删除返回 `409005`。
 
-### 3.3 基础资料与号源查询（B 负责实现）
+### 3.3 基础资料与号源查询（B 已实现，均需 Bearer Token，不区分 PATIENT/ADMIN）
 
-| 方法 | 路径 | 说明 | 参数 | 成功响应 |
+| 方法 | 路径 | 说明 | 参数 | 成功响应 `data` |
 | --- | --- | --- | --- | --- |
-| GET | `/api/departments/tree` | 科室树（仅启用） | - | `Department[]`（含子级） |
-| GET | `/api/slots` | 号源查询 | `departmentId, date, levelId` | `Slot[]`（仅 `enabled=1` 且 `remaining_quota>0`） |
-| GET | `/api/doctors/{id}` | 医生详情 | - | `DoctorDetail` |
+| GET | `/api/departments/tree` | 科室树，仅 `enabled=1`，`parentId=0` 为根节点 | - | `DepartmentTreeNode[]`：`{id, code, name, description, sortNo, children[]}` |
+| GET | `/api/slots` | 号源查询，仅 `status=OPEN` 且 `remainingQuota>0` | `departmentId`（必填）、`date`（必填，`yyyy-MM-dd`，按天查询，前端遍历未来 7 日分别调用）、`levelId`（可选） | `SlotSummary[]`：`{slotId, doctorId, doctorName, doctorAvatarUrl, departmentId, levelId, levelName, feeFen, visitDate, startTime, endTime, remainingQuota}` |
+| GET | `/api/doctors/{id}` | 医生详情，含所属科室名称与可提供的挂号级别 | - | `DoctorDetailResponse`：`{id, name, departmentId, departmentName, title, avatarUrl, introduction, levels: [{levelId, code, name, feeFen}]}` |
+
+医生不存在或已下线返回 `404`。
 
 ### 3.4 预约订单（C 负责实现，契约见 `docs/06-挂号流程与状态机.md`）
 
