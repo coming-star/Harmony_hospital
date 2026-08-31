@@ -1,5 +1,7 @@
 # 东软云医院预约挂号系统
 
+## 项目简介
+
 一个面向患者的鸿蒙预约挂号应用，以及面向系统管理员的 Web 后台。
 
 项目的开发前置分析与实施约定位于 [`docs/`](docs/)。建议在编码前由全组确认需求范围、数据规则和验收标准。
@@ -10,12 +12,32 @@
 - 管理端：Vue 3、Vite、Element Plus、Pinia、Axios
 - 移动端：HarmonyOS / ArkTS / ArkUI / DevEco Studio
 
-## 文档索引
+## 项目结构
 
-- [01-项目立项与范围](docs/01-项目立项与范围.md)
-- [02-软件需求规格说明书](docs/02-软件需求规格说明书.md)
-- [03-技术方案与数据设计](docs/03-技术方案与数据设计.md)
-- [04-项目计划、测试与验收](docs/04-项目计划、测试与验收.md)
-- [05-数据库设计说明](docs/05-数据库设计说明.md)
-- [MySQL 8 建库脚本](database/01_schema.sql)
-- [演示基础数据脚本](database/02_demo_seed.sql)
+```
+group-12-repo/
+├── docs/                          # 需求、设计与流程契约文档
+├── Hos_App/
+│   ├── his-springboot/            # 后端：Spring Boot 3 + MyBatis-Plus
+│   │   └── src/main/resources/db/ # 建库与演示数据脚本
+│   ├── his-web/                   # 管理端：Vue 3 + Vite + Element Plus（待搭建）
+│   └── his-harmony/                # 移动端：HarmonyOS / ArkTS（待搭建）
+├── gp12-项目进度计划跟踪表.xlsx
+└── README.md
+```
+
+## 快速开始
+
+（待补充）
+
+## 核心功能
+
+（待补充）
+
+## API 接口文档
+
+（待补充）
+
+## 团队分工
+
+（待补充）
