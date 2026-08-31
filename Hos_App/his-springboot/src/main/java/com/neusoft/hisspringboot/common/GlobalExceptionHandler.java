@@ -45,6 +45,16 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.fail(400, "请求体格式不正确"));
     }
 
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBusinessException(
+            BusinessException exception
+    ) {
+        ErrorCode errorCode = exception.getErrorCode();
+
+        return ResponseEntity.status(errorCode.getHttpStatus())
+                .body(ApiResponse.fail(errorCode));
+    }
+
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusinessError(
             ResponseStatusException exception
