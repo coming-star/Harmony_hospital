@@ -29,6 +29,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
+        // ============【新增：静态资源、登录接口、文档放行】============
+        String uri = request.getRequestURI();
+        if (uri.startsWith("/index.html")
+                || uri.startsWith("/js/")
+                || uri.startsWith("/css/")
+                || uri.startsWith("/img/")
+                || uri.startsWith("/favicon.ico")
+                || uri.startsWith("/doc.html")
+                || uri.startsWith("/webjars/")
+                || uri.startsWith("/v3/api-docs")
+                || uri.startsWith("/swagger-resources")
+                || uri.startsWith("/api/admin/auth/login")
+                || uri.startsWith("/api/app/auth/login")
+                || uri.startsWith("/api/app/auth/register")
+                || uri.startsWith("/error")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+        // ==========================================================
+
         String authorization = request.getHeader("Authorization");
 
         if (authorization == null || !authorization.startsWith("Bearer ")) {

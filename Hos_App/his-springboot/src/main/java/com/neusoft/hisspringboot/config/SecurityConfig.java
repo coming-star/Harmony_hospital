@@ -57,7 +57,13 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        // ============新增静态页面放行：index.html、js、css、img等============
                         .requestMatchers(
+                                "/index.html",
+                                "/js/**",
+                                "/css/**",
+                                "/img/**",
+                                "/favicon.ico",
                                 "/error",
                                 "/doc.html",
                                 "/webjars/**",

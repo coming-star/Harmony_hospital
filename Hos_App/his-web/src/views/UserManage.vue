@@ -10,7 +10,7 @@ const total = ref(0)
 
 const query = reactive({
   phone: '',
-  status: '',
+  enabled: '',
   page: 1,
   size: 10,
 })
@@ -22,14 +22,13 @@ const form = reactive({
   id: null,
   phone: '',
   nickname: '',
-  password: '',
-  status: 1,
+  userType: '',
+  enabled: 1,
 })
 
 const rules = {
   phone: [{ required: true, message: '请输入手机号', trigger: 'blur' }],
   nickname: [{ required: true, message: '请输入昵称', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入初始密码', trigger: 'blur' }],
 }
 
 async function loadList() {
@@ -48,20 +47,26 @@ function handleSearch() {
   loadList()
 }
 
-function handleSizeChange() {
+function handleSizeChange(val) {
+  query.size = val
   query.page = 1
+  loadList()
+}
+
+function handleCurrentChange(val) {
+  query.page = val
   loadList()
 }
 
 function openCreate() {
   dialogMode.value = 'create'
-  Object.assign(form, { id: null, phone: '', nickname: '', password: '', status: 1 })
+  Object.assign(form, { id: null, phone: '', nickname: '', userType: '', enabled: 1 })
   dialogVisible.value = true
 }
 
 function openEdit(row) {
   dialogMode.value = 'edit'
-  Object.assign(form, { ...row, password: '' })
+  Object.assign(form, { ...row })
   dialogVisible.value = true
 }
 
@@ -78,7 +83,7 @@ async function handleSubmit() {
 }
 
 async function handleToggleStatus(row) {
-  const nextEnabled = row.status === 1 ? 0 : 1
+  const nextEnabled = row.enabled === 1 ? 0 : 1
   await userApi.toggleStatus(row.id, nextEnabled)
   ElMessage.success('操作成功')
   loadList()
@@ -91,7 +96,9 @@ async function handleDelete(row) {
   loadList()
 }
 
-onMounted(loadList)
+onMounted(() => {
+  loadList()
+})
 </script>
 
 <template>
@@ -102,7 +109,7 @@ onMounted(loadList)
           <el-input v-model="query.phone" placeholder="手机号" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
+          <el-select v-model="query.enabled" placeholder="全部" clearable style="width:140px">
             <el-option label="启用" :value="1" />
             <el-option label="停用" :value="0" />
           </el-select>
@@ -121,23 +128,21 @@ onMounted(loadList)
 
       <el-table v-loading="loading" :data="tableData" border stripe>
         <el-table-column type="index" label="序号" width="60" align="center" :index="(index) => (query.page - 1) * query.size + index + 1" />
-        <el-table-column prop="phone" label="手机号" width="140" />
+        <el-table-column prop="phone" label="手机号" width="160" />
         <el-table-column prop="nickname" label="昵称" width="140" />
-        <el-table-column prop="userType" label="类型" width="100">
-          <template #default>门诊</template>
-        </el-table-column>
-        <el-table-column prop="createdAt" label="注册日期" width="180" />
-        <el-table-column prop="lastLoginAt" label="最后登录" width="180" />
+        <el-table-column prop="userType" label="类型" width="100" />
+        <el-table-column prop="createTime" label="注册日期" width="180" />
+        <el-table-column prop="lastLoginTime" label="最后登录" width="180" />
         <el-table-column label="状态" width="100" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? '启用' : '停用' }}</el-tag>
+            <el-tag :type="row.enabled === 1 ? 'success' : 'info'">{{ row.enabled === 1 ? '启用' : '停用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220" align="center">
+        <el-table-column label="操作" width="240" align="center">
           <template #default="{ row }">
             <el-button link type="primary" :icon="Edit" @click="openEdit(row)">编辑</el-button>
             <el-button link type="warning" @click="handleToggleStatus(row)">
-              {{ row.status === 1 ? '停用' : '启用' }}
+              {{ row.enabled === 1 ? '停用' : '启用' }}
             </el-button>
             <el-button link type="danger" :icon="Delete" @click="handleDelete(row)">删除</el-button>
           </template>
@@ -145,6 +150,7 @@ onMounted(loadList)
       </el-table>
 
       <div class="pagination-wrap">
+        <!-- layout完整配置：total, sizes, prev, pager, next, jumper -->
         <el-pagination
           v-model:current-page="query.page"
           v-model:page-size="query.size"
@@ -152,21 +158,21 @@ onMounted(loadList)
           :page-sizes="[10, 20, 50, 100]"
           layout="total, sizes, prev, pager, next, jumper"
           @size-change="handleSizeChange"
-          @current-change="loadList"
+          @current-change="handleCurrentChange"
         />
       </div>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" :title="dialogMode === 'create' ? '新增用户' : '编辑用户'" width="420px">
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
+    <el-dialog v-model="dialogVisible" :title="dialogMode === 'create' ? '新增用户' : '编辑用户'" width="480px">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
         <el-form-item label="手机号" prop="phone">
           <el-input v-model="form.phone" />
         </el-form-item>
         <el-form-item label="昵称" prop="nickname">
           <el-input v-model="form.nickname" />
         </el-form-item>
-        <el-form-item v-if="dialogMode === 'create'" label="初始密码" prop="password">
-          <el-input v-model="form.password" type="password" show-password />
+        <el-form-item label="用户类型">
+          <el-input v-model="form.userType" placeholder="门诊" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -176,3 +182,17 @@ onMounted(loadList)
     </el-dialog>
   </div>
 </template>
+
+<style scoped>
+.pagination-wrap {
+  margin-top:16px;
+  display:flex;
+  justify-content:flex-end;
+}
+.toolbar {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:12px;
+}
+</style>
