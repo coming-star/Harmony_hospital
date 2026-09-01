@@ -5,6 +5,34 @@ import { Search, Plus, Edit, Delete, Refresh } from '@element-plus/icons-vue'
 import { doctorApi, levelApi } from '../api/admin'
 import request from '../api/request'
 
+const WEEKDAYS = [
+  { label: '周一', bit: 1 },
+  { label: '周二', bit: 2 },
+  { label: '周三', bit: 4 },
+  { label: '周四', bit: 8 },
+  { label: '周五', bit: 16 },
+  { label: '周六', bit: 32 },
+  { label: '周日', bit: 64 },
+]
+
+const PERIODS = [
+  { label: '上午', value: 'MORNING' },
+  { label: '下午', value: 'AFTERNOON' },
+  { label: '晚上', value: 'EVENING' },
+]
+
+function weekdayLabel(mask) {
+  return WEEKDAYS.filter((item) => (mask & item.bit) === item.bit).map((item) => item.label).join('、') || '-'
+}
+
+function periodLabel(period) {
+  return PERIODS.find((item) => item.value === period)?.label || period
+}
+
+function levelName(levelId) {
+  return levelOptions.value.find((item) => item.id === levelId)?.name || levelId
+}
+
 const loading = ref(false)
 const tableData = ref([])
 const total = ref(0)
@@ -168,6 +196,33 @@ onMounted(() => {
         <el-table-column prop="title" label="职称" width="130" />
         <el-table-column prop="departmentId" label="科室ID" width="100" />
         <el-table-column prop="introduction" label="简介" min-width="160" show-overflow-tooltip class-name="cell-left" />
+        <el-table-column label="挂号级别" width="140">
+          <template #default="{ row }">
+            <el-tag
+              v-for="levelId in row.levelIds"
+              :key="levelId"
+              size="small"
+              style="margin: 0 4px 4px 0"
+            >
+              {{ levelName(levelId) }}
+            </el-tag>
+            <span v-if="!row.levelIds || row.levelIds.length === 0">-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="排班规则" min-width="200">
+          <template #default="{ row }">
+            <el-tag
+              v-for="(rule, index) in row.scheduleRules"
+              :key="index"
+              size="small"
+              type="success"
+              style="margin: 0 4px 4px 0"
+            >
+              {{ weekdayLabel(rule.weekdayMask) }} {{ periodLabel(rule.period) }}
+            </el-tag>
+            <span v-if="!row.scheduleRules || row.scheduleRules.length === 0">-</span>
+          </template>
+        </el-table-column>
         <el-table-column label="状态" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="row.enabled === 1 ? 'success' : 'info'">{{ row.enabled === 1 ? '已启用' : '已停用' }}</el-tag>

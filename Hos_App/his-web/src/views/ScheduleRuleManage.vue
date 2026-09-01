@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Edit, Delete } from '@element-plus/icons-vue'
+import { Search, Plus, Edit, Delete, Refresh } from '@element-plus/icons-vue'
 import { scheduleRuleApi, doctorApi } from '../api/admin'
 
 const WEEKDAYS = [
@@ -26,6 +26,7 @@ const total = ref(0)
 const doctorOptions = ref([])
 
 const query = reactive({
+  ruleName: '',
   page: 1,
   size: 10,
 })
@@ -95,6 +96,17 @@ async function loadDoctorOptions() {
   } catch {
     doctorOptions.value = []
   }
+}
+
+function handleSearch() {
+  query.page = 1
+  loadList()
+}
+
+function handleReset() {
+  query.ruleName = ''
+  query.page = 1
+  loadList()
 }
 
 function handleSizeChange() {
@@ -173,6 +185,18 @@ onMounted(() => {
 
 <template>
   <div>
+    <el-card class="filter-card" shadow="never">
+      <el-form :inline="true" :model="query" @submit.prevent>
+        <el-form-item label="排班说明">
+          <el-input v-model="query.ruleName" placeholder="排班说明关键字" clearable @keyup.enter="handleSearch" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
+          <el-button :icon="Refresh" @click="handleReset">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
     <el-card class="table-card" shadow="never">
       <div class="toolbar">
         <span class="toolbar-title">排班规则列表</span>

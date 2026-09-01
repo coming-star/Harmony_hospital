@@ -10,6 +10,7 @@ public record AdminDoctorResponse(
         String avatarUrl,
         String introduction,
         Integer enabled,
-        List<Long> levelIds
+        List<Long> levelIds,
+        List<DoctorScheduleRuleBrief> scheduleRules
 ) {
 }

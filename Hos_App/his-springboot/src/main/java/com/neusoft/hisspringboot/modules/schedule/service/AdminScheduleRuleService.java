@@ -21,10 +21,12 @@ public class AdminScheduleRuleService {
     private final ScheduleRuleMapper scheduleRuleMapper;
     private final ScheduleSlotMapper scheduleSlotMapper;
 
-    public PageResult<ScheduleRule> list(int page, int size) {
+    public PageResult<ScheduleRule> list(String ruleName, int page, int size) {
         Page<ScheduleRule> mpPage = scheduleRuleMapper.selectPage(
                 new Page<>(page, size),
-                new LambdaQueryWrapper<ScheduleRule>().orderByDesc(ScheduleRule::getCreatedAt)
+                new LambdaQueryWrapper<ScheduleRule>()
+                        .like(ruleName != null && !ruleName.isBlank(), ScheduleRule::getRuleName, ruleName)
+                        .orderByDesc(ScheduleRule::getCreatedAt)
         );
 
         return PageResult.of(mpPage.getRecords(), mpPage.getTotal(), page, size);

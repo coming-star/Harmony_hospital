@@ -7,10 +7,13 @@ import com.neusoft.hisspringboot.common.ErrorCode;
 import com.neusoft.hisspringboot.common.PageResult;
 import com.neusoft.hisspringboot.modules.doctor.dto.AdminDoctorRequest;
 import com.neusoft.hisspringboot.modules.doctor.dto.AdminDoctorResponse;
+import com.neusoft.hisspringboot.modules.doctor.dto.DoctorScheduleRuleBrief;
 import com.neusoft.hisspringboot.modules.doctor.entity.Doctor;
 import com.neusoft.hisspringboot.modules.doctor.entity.DoctorRegistrationLevel;
 import com.neusoft.hisspringboot.modules.doctor.mapper.DoctorMapper;
 import com.neusoft.hisspringboot.modules.doctor.mapper.DoctorRegistrationLevelMapper;
+import com.neusoft.hisspringboot.modules.level.entity.RegistrationLevel;
+import com.neusoft.hisspringboot.modules.level.mapper.RegistrationLevelMapper;
 import com.neusoft.hisspringboot.modules.schedule.entity.ScheduleRule;
 import com.neusoft.hisspringboot.modules.schedule.entity.ScheduleSlot;
 import com.neusoft.hisspringboot.modules.schedule.mapper.ScheduleRuleMapper;
@@ -33,6 +36,7 @@ public class AdminDoctorService {
     private final DoctorRegistrationLevelMapper doctorRegistrationLevelMapper;
     private final ScheduleRuleMapper scheduleRuleMapper;
     private final ScheduleSlotMapper scheduleSlotMapper;
+    private final RegistrationLevelMapper registrationLevelMapper;
 
     public PageResult<AdminDoctorResponse> list(String name, Long departmentId, int page, int size) {
         Page<Doctor> mpPage = doctorMapper.selectPage(
@@ -57,8 +61,37 @@ public class AdminDoctorService {
                 Collectors.mapping(DoctorRegistrationLevel::getLevelId, Collectors.toList())
         ));
 
+        List<ScheduleRule> scheduleRules = scheduleRuleMapper.selectList(
+                new LambdaQueryWrapper<ScheduleRule>().in(ScheduleRule::getDoctorId, doctorIds)
+        );
+
+        Map<Long, String> levelNameById = scheduleRules.isEmpty()
+                ? Map.of()
+                : registrationLevelMapper.selectBatchIds(
+                        scheduleRules.stream().map(ScheduleRule::getLevelId).distinct().toList()
+                ).stream().collect(Collectors.toMap(RegistrationLevel::getId, RegistrationLevel::getName));
+
+        Map<Long, List<DoctorScheduleRuleBrief>> scheduleRulesByDoctorId = scheduleRules.stream()
+                .collect(Collectors.groupingBy(
+                        ScheduleRule::getDoctorId,
+                        Collectors.mapping(
+                                rule -> new DoctorScheduleRuleBrief(
+                                        rule.getLevelId(),
+                                        levelNameById.get(rule.getLevelId()),
+                                        rule.getRuleName(),
+                                        rule.getWeekdayMask(),
+                                        rule.getPeriod()
+                                ),
+                                Collectors.toList()
+                        )
+                ));
+
         List<AdminDoctorResponse> records = doctors.stream()
-                .map(doctor -> toResponse(doctor, levelIdsByDoctorId.getOrDefault(doctor.getId(), List.of())))
+                .map(doctor -> toResponse(
+                        doctor,
+                        levelIdsByDoctorId.getOrDefault(doctor.getId(), List.of()),
+                        scheduleRulesByDoctorId.getOrDefault(doctor.getId(), List.of())
+                ))
                 .toList();
 
         return PageResult.of(records, mpPage.getTotal(), page, size);
@@ -144,7 +177,11 @@ public class AdminDoctorService {
         return doctor;
     }
 
-    private AdminDoctorResponse toResponse(Doctor doctor, List<Long> levelIds) {
+    private AdminDoctorResponse toResponse(
+            Doctor doctor,
+            List<Long> levelIds,
+            List<DoctorScheduleRuleBrief> scheduleRules
+    ) {
         return new AdminDoctorResponse(
                 doctor.getId(),
                 doctor.getName(),
@@ -153,7 +190,8 @@ public class AdminDoctorService {
                 doctor.getAvatarUrl(),
                 doctor.getIntroduction(),
                 doctor.getEnabled(),
-                levelIds
+                levelIds,
+                scheduleRules
         );
     }
 }
