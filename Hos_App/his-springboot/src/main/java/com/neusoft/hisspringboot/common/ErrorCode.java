@@ -14,6 +14,7 @@ public enum ErrorCode {
     SLOT_SOLD_OUT(409003, HttpStatus.CONFLICT, "该时段已约满或状态已变化"),
     ORDER_STATUS_CONFLICT(409004, HttpStatus.CONFLICT, "订单状态已变化，操作不可执行"),
     REFERENCED_BY_OTHER_RECORD(409005, HttpStatus.CONFLICT, "存在关联数据引用，请先停用"),
+    CODE_ALREADY_EXISTS(409006, HttpStatus.CONFLICT, "编码已存在"),
     BUSINESS_RULE_VIOLATION(422001, HttpStatus.UNPROCESSABLE_ENTITY, "业务规则校验未通过");
 
     private final int code;
