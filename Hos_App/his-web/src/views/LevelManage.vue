@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus, Edit, Delete } from '@element-plus/icons-vue'
 import { levelApi } from '../api/admin'
 
 const loading = ref(false)
@@ -38,6 +39,11 @@ async function loadList() {
   } finally {
     loading.value = false
   }
+}
+
+function handleSizeChange() {
+  query.page = 1
+  loadList()
 }
 
 function openCreate() {
@@ -84,44 +90,49 @@ onMounted(loadList)
 
 <template>
   <div>
-    <el-form :inline="true">
-      <el-form-item>
-        <el-button type="success" @click="openCreate">新增挂号级别</el-button>
-      </el-form-item>
-    </el-form>
+    <el-card class="table-card" shadow="never">
+      <div class="toolbar">
+        <span class="toolbar-title">挂号级别列表</span>
+        <el-button type="primary" :icon="Plus" @click="openCreate">新增挂号级别</el-button>
+      </div>
 
-    <el-table v-loading="loading" :data="tableData" border>
-      <el-table-column prop="code" label="编码" width="120" />
-      <el-table-column prop="name" label="名称" width="140" />
-      <el-table-column label="费用（元）" width="120">
-        <template #default="{ row }">{{ (row.feeFen / 100).toFixed(2) }}</template>
-      </el-table-column>
-      <el-table-column prop="defaultQuota" label="默认限额" width="100" />
-      <el-table-column prop="sortNo" label="排序" width="80" />
-      <el-table-column label="状态" width="100">
-        <template #default="{ row }">
-          <el-tag :type="row.enabled === 1 ? 'success' : 'info'">{{ row.enabled === 1 ? '已启用' : '已停用' }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="220">
-        <template #default="{ row }">
-          <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-          <el-button link type="warning" @click="handleToggleStatus(row)">
-            {{ row.enabled === 1 ? '停用' : '启用' }}
-          </el-button>
-          <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+      <el-table v-loading="loading" :data="tableData" border stripe>
+        <el-table-column type="index" label="序号" width="60" align="center" :index="(index) => (query.page - 1) * query.size + index + 1" />
+        <el-table-column prop="code" label="编码" width="120" />
+        <el-table-column prop="name" label="名称" width="140" />
+        <el-table-column label="费用（元）" width="120">
+          <template #default="{ row }">{{ (row.feeFen / 100).toFixed(2) }}</template>
+        </el-table-column>
+        <el-table-column prop="defaultQuota" label="默认限额" width="100" />
+        <el-table-column prop="sortNo" label="排序" width="80" />
+        <el-table-column label="状态" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.enabled === 1 ? 'success' : 'info'">{{ row.enabled === 1 ? '已启用' : '已停用' }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="220" align="center">
+          <template #default="{ row }">
+            <el-button link type="primary" :icon="Edit" @click="openEdit(row)">编辑</el-button>
+            <el-button link type="warning" @click="handleToggleStatus(row)">
+              {{ row.enabled === 1 ? '停用' : '启用' }}
+            </el-button>
+            <el-button link type="danger" :icon="Delete" @click="handleDelete(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
 
-    <el-pagination
-      class="pagination"
-      v-model:current-page="query.page"
-      v-model:page-size="query.size"
-      :total="total"
-      layout="total, prev, pager, next"
-      @current-change="loadList"
-    />
+      <div class="pagination-wrap">
+        <el-pagination
+          v-model:current-page="query.page"
+          v-model:page-size="query.size"
+          :total="total"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
+          @current-change="loadList"
+        />
+      </div>
+    </el-card>
 
     <el-dialog v-model="dialogVisible" :title="dialogMode === 'create' ? '新增挂号级别' : '编辑挂号级别'" width="420px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
@@ -148,10 +159,3 @@ onMounted(loadList)
     </el-dialog>
   </div>
 </template>
-
-<style scoped>
-.pagination {
-  margin-top: 16px;
-  justify-content: flex-end;
-}
-</style>

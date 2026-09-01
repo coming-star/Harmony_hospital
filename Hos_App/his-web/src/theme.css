@@ -1,0 +1,148 @@
+/* ============================================================
+ * 医疗健康主题 —— 全局样式与配色
+ * 主色 #2B7A8A / 辅色 #F0F7F4 / 强调色 #3AA67A / 文字 #1A2B2C
+ * 在 element-plus 样式之后引入，通过 CSS 变量覆盖默认主题
+ * ============================================================ */
+:root {
+  /* 主色：深蓝绿 */
+  --el-color-primary: #2b7a8a;
+  --el-color-primary-light-3: #6ba2ad;
+  --el-color-primary-light-5: #95bdc5;
+  --el-color-primary-light-7: #bfd7dc;
+  --el-color-primary-light-8: #d5e4e8;
+  --el-color-primary-light-9: #eaf2f3;
+  --el-color-primary-dark-2: #22626e;
+
+  /* 强调色：健康绿 */
+  --el-color-success: #3aa67a;
+  --el-color-success-light-3: #75c1a2;
+  --el-color-success-light-5: #9dd3bd;
+  --el-color-success-light-7: #c4e4d7;
+  --el-color-success-light-8: #d8ede4;
+  --el-color-success-light-9: #ebf6f2;
+  --el-color-success-dark-2: #2e8562;
+
+  /* 文字深色 */
+  --el-text-color-primary: #1a2b2c;
+  --el-text-color-regular: #2e4041;
+  --el-text-color-secondary: #5c6f71;
+  --el-text-color-placeholder: #9fb0b2;
+
+  /* 页面底色与边框（浅灰绿） */
+  --el-bg-color-page: #f0f7f4;
+  --el-bg-color: #ffffff;
+  --el-border-color: #d6e3df;
+  --el-border-color-light: #e3ede9;
+  --el-border-color-lighter: #edf4f1;
+  --el-border-color-extra-light: #f3f8f6;
+  --el-fill-color-light: #f0f7f4;
+  --el-fill-color-lighter: #f7fbf9;
+  --el-fill-color-extra-light: #fbfdfc;
+
+  /* 圆角 */
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 6px;
+  --el-border-radius-round: 20px;
+
+  /* 卡片 */
+  --el-card-border-radius: 12px;
+  --el-card-border-color: #e3ede9;
+}
+
+body {
+  color: #1a2b2c;
+  background-color: #f0f7f4;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============ 卡片：阴影 / 圆角 / 反馈 ============ */
+.el-card {
+  border-radius: 12px;
+  border: 1px solid #e3ede9;
+  box-shadow: 0 2px 12px rgba(26, 43, 44, 0.06);
+}
+
+/* ============ 按钮：圆角 / 反馈 ============ */
+.el-button {
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.el-button:active {
+  transform: translateY(1px);
+}
+
+/* ============ 输入框：边框 / 聚焦 ============ */
+.el-input__wrapper,
+.el-textarea__inner {
+  border-radius: 8px;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px #2b7a8a inset, 0 0 8px rgba(43, 122, 138, 0.15);
+}
+
+.el-select__wrapper.is-focused {
+  box-shadow: 0 0 0 1px #2b7a8a inset, 0 0 8px rgba(43, 122, 138, 0.15);
+}
+
+/* ============ 表格：表头 / 边框 / 斑马纹 / 行悬停 ============ */
+.el-table {
+  --el-table-header-bg-color: #eaf2f3;
+  --el-table-header-text-color: #1a2b2c;
+  --el-table-border-color: #e3ede9;
+  --el-table-row-hover-bg-color: #eaf6f1;
+  --el-table-striped-row-bg-color: #f7fbf9;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.el-table th.el-table__cell {
+  font-weight: 600;
+  color: #1a2b2c;
+}
+
+/* ============ 标签 / 分页 / 对话框 圆角统一 ============ */
+.el-tag {
+  border-radius: 6px;
+}
+
+.el-dialog {
+  border-radius: 12px;
+}
+
+.el-message-box {
+  border-radius: 12px;
+}
+
+/* ============ 页面布局：筛选卡片 / 表格卡片 / 工具栏 ============ */
+.filter-card {
+  margin-bottom: 16px;
+}
+
+.filter-card .el-form-item {
+  margin-bottom: 0;
+}
+
+.table-card .toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.toolbar-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a2b2c;
+}
+
+.pagination-wrap {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}

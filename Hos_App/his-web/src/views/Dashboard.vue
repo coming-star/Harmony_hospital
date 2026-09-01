@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { User, OfficeBuilding, FirstAidKit, Tickets } from '@element-plus/icons-vue'
 import { userApi, departmentApi, doctorApi, orderApi } from '../api/admin'
 
 const router = useRouter()
@@ -11,6 +12,13 @@ const stats = reactive({
   doctorCount: '-',
   todayOrderCount: '-',
 })
+
+const statCards = [
+  { key: 'userCount', title: '用户数', icon: User, color: '#2b7a8a' },
+  { key: 'departmentCount', title: '科室数', icon: OfficeBuilding, color: '#3aa67a' },
+  { key: 'doctorCount', title: '医生数', icon: FirstAidKit, color: '#2b7a8a' },
+  { key: 'todayOrderCount', title: '今日预约数', icon: Tickets, color: '#3aa67a' },
+]
 
 const quickLinks = [
   { title: '用户管理', path: '/users' },
@@ -50,17 +58,16 @@ onMounted(() => {
 <template>
   <div class="dashboard">
     <el-row :gutter="16">
-      <el-col :span="6">
-        <el-card><div class="stat-title">用户数</div><div class="stat-value">{{ stats.userCount }}</div></el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card><div class="stat-title">科室数</div><div class="stat-value">{{ stats.departmentCount }}</div></el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card><div class="stat-title">医生数</div><div class="stat-value">{{ stats.doctorCount }}</div></el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card><div class="stat-title">今日预约数</div><div class="stat-value">{{ stats.todayOrderCount }}</div></el-card>
+      <el-col v-for="item in statCards" :key="item.key" :span="6">
+        <el-card class="stat-card">
+          <div class="stat-icon" :style="{ background: item.color }">
+            <el-icon :size="22"><component :is="item.icon" /></el-icon>
+          </div>
+          <div class="stat-body">
+            <div class="stat-title">{{ item.title }}</div>
+            <div class="stat-value">{{ stats[item.key] }}</div>
+          </div>
+        </el-card>
       </el-col>
     </el-row>
 
@@ -88,15 +95,38 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.stat-card :deep(.el-card__body) {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+}
+
+.stat-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-body {
+  min-width: 0;
+}
+
 .stat-title {
-  color: #909399;
+  color: #5c6f71;
   font-size: 13px;
 }
 
 .stat-value {
   font-size: 28px;
   font-weight: 600;
-  margin-top: 8px;
+  margin-top: 4px;
+  color: #1a2b2c;
 }
 
 .dashboard-row {
