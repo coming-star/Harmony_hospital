@@ -168,7 +168,7 @@ onMounted(() => {
           <el-input v-model="query.name" placeholder="医生姓名" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item label="科室">
-          <el-select v-model="query.departmentId" placeholder="全部" clearable style="width: 160px">
+          <el-select v-model="query.departmentId" placeholder="全部" clearable style="width: 160px" @change="handleSearch">
             <el-option v-for="dept in departmentOptions" :key="dept.id" :label="dept.name" :value="dept.id" />
           </el-select>
         </el-form-item>

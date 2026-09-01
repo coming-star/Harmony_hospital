@@ -1,6 +1,7 @@
 package com.neusoft.hisspringboot.modules.department.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -27,6 +28,9 @@ public class Department {
     private String description;
     private Integer sortNo;
     private Integer enabled;
+
+    @TableField(exist = false)
+    private String parentName;
 
     @TableLogic
     private Integer deleted;

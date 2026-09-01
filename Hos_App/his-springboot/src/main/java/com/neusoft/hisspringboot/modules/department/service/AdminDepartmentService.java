@@ -14,6 +14,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class AdminDepartmentService {
@@ -21,17 +26,44 @@ public class AdminDepartmentService {
     private final DepartmentMapper departmentMapper;
     private final DoctorMapper doctorMapper;
 
-    public PageResult<Department> list(String name, String departmentType, Boolean excludeRoot, int page, int size) {
+    public PageResult<Department> list(String name, String departmentType, Long parentId, Boolean excludeRoot, int page, int size) {
+        boolean effectiveExcludeRoot = !Boolean.FALSE.equals(excludeRoot);
+
         Page<Department> mpPage = departmentMapper.selectPage(
                 new Page<>(page, size),
                 new LambdaQueryWrapper<Department>()
                         .like(name != null && !name.isBlank(), Department::getName, name)
                         .eq(departmentType != null && !departmentType.isBlank(), Department::getDepartmentType, departmentType)
-                        .ne(Boolean.TRUE.equals(excludeRoot), Department::getParentId, 0)
+                        .eq(parentId != null, Department::getParentId, parentId)
+                        .ne(effectiveExcludeRoot, Department::getParentId, 0)
                         .orderByAsc(Department::getSortNo)
         );
 
-        return PageResult.of(mpPage.getRecords(), mpPage.getTotal(), page, size);
+        List<Department> records = mpPage.getRecords();
+        fillParentNames(records);
+
+        return PageResult.of(records, mpPage.getTotal(), page, size);
+    }
+
+    private void fillParentNames(List<Department> departments) {
+        if (departments == null || departments.isEmpty()) return;
+
+        List<Long> parentIds = departments.stream()
+                .map(Department::getParentId)
+                .filter(id -> id != null && id != 0)
+                .distinct()
+                .collect(Collectors.toList());
+
+        if (parentIds.isEmpty()) return;
+
+        Map<Long, String> parentNameMap = departmentMapper.selectBatchIds(parentIds).stream()
+                .collect(Collectors.toMap(Department::getId, Department::getName, (a, b) -> a));
+
+        for (Department dept : departments) {
+            if (dept.getParentId() != null && dept.getParentId() != 0) {
+                dept.setParentName(parentNameMap.getOrDefault(dept.getParentId(), ""));
+            }
+        }
     }
 
     public Long create(Department department) {
@@ -43,7 +75,11 @@ public class AdminDepartmentService {
     }
 
     public void update(Long id, Department department) {
-        getOrThrow(id);
+        Department existing = getOrThrow(id);
+        if (existing.getParentId() != null && existing.getParentId() != 0
+                && department.getParentId() != null && department.getParentId() == 0) {
+            throw new BusinessException(ErrorCode.BUSINESS_RULE_VIOLATION, "二级科室不能降级为一级科室");
+        }
         ensureCodeAvailable(department.getCode(), id);
         department.setId(id);
         departmentMapper.updateById(department);

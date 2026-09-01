@@ -5,20 +5,15 @@ import { Search, Plus, Edit, Delete, Refresh } from '@element-plus/icons-vue'
 import { departmentApi } from '../api/admin'
 import request from '../api/request'
 
-const DEPARTMENT_TYPES = [
-  { label: '临床科室', value: 'CLINICAL' },
-  { label: '医技科室', value: 'MEDICAL_TECHNOLOGY' },
-  { label: '其他', value: 'OTHER' },
-]
-
 const loading = ref(false)
 const tableData = ref([])
 const total = ref(0)
 const parentOptions = ref([])
+const firstLevelDepartments = ref([])
 
 const query = reactive({
   name: '',
-  departmentType: '',
+  parentId: null,
   page: 1,
   size: 10,
 })
@@ -60,6 +55,15 @@ async function loadParentOptions() {
   }
 }
 
+async function loadFirstLevelDepartments() {
+  try {
+    const tree = await request.get('/api/departments/tree')
+    firstLevelDepartments.value = tree || []
+  } catch {
+    firstLevelDepartments.value = []
+  }
+}
+
 function handleSearch() {
   query.page = 1
   loadList()
@@ -67,7 +71,7 @@ function handleSearch() {
 
 function handleReset() {
   query.name = ''
-  query.departmentType = ''
+  query.parentId = null
   query.page = 1
   loadList()
 }
@@ -108,9 +112,19 @@ async function handleDelete(row) {
   loadList()
 }
 
+async function handleToggleStatus(row) {
+  const next = row.enabled === 1 ? 0 : 1
+  const action = next === 1 ? '启用' : '停用'
+  await ElMessageBox.confirm(`确认${action}科室「${row.name}」？`, '提示', { type: 'warning' })
+  await departmentApi.toggleStatus(row.id, next)
+  ElMessage.success(`${action}成功`)
+  loadList()
+}
+
 onMounted(() => {
   loadList()
   loadParentOptions()
+  loadFirstLevelDepartments()
 })
 </script>
 
@@ -121,9 +135,9 @@ onMounted(() => {
         <el-form-item label="名称">
           <el-input v-model="query.name" placeholder="科室名称" clearable @keyup.enter="handleSearch" />
         </el-form-item>
-        <el-form-item label="类型">
-          <el-select v-model="query.departmentType" placeholder="全部" clearable style="width: 160px">
-            <el-option v-for="item in DEPARTMENT_TYPES" :key="item.value" :label="item.label" :value="item.value" />
+        <el-form-item label="科室">
+          <el-select v-model="query.parentId" placeholder="全部" clearable style="width: 160px" @change="handleSearch">
+            <el-option v-for="dept in firstLevelDepartments" :key="dept.id" :label="dept.name" :value="dept.id" />
           </el-select>
         </el-form-item>
         <el-form-item>
@@ -146,16 +160,19 @@ onMounted(() => {
         <el-table-column prop="departmentType" label="类型" width="100" align="center">
           <template #default>门诊</template>
         </el-table-column>
-        <el-table-column prop="parentId" label="父级科室ID" width="110" />
+        <el-table-column prop="parentName" label="所属科室" width="110" />
         <el-table-column prop="description" label="说明" min-width="160" show-overflow-tooltip class-name="cell-left" />
         <el-table-column label="状态" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="row.enabled === 1 ? 'success' : 'info'">{{ row.enabled === 1 ? '已启用' : '已停用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" align="center">
+        <el-table-column label="操作" width="220" align="center">
           <template #default="{ row }">
             <el-button link type="primary" :icon="Edit" @click="openEdit(row)">编辑</el-button>
+            <el-button link :type="row.enabled === 1 ? 'warning' : 'success'" @click="handleToggleStatus(row)">
+              {{ row.enabled === 1 ? '停用' : '启用' }}
+            </el-button>
             <el-button link type="danger" :icon="Delete" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -189,7 +206,7 @@ onMounted(() => {
         </el-form-item>
         <el-form-item label="父级科室">
           <el-select v-model="form.parentId" style="width: 100%">
-            <el-option label="无（一级科室）" :value="0" />
+            <el-option v-if="dialogMode === 'create'" label="无（一级科室）" :value="0" />
             <el-option v-for="dept in parentOptions" :key="dept.id" :label="dept.name" :value="dept.id" />
           </el-select>
         </el-form-item>

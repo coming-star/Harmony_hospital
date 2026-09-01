@@ -26,11 +26,12 @@ public class AdminDepartmentController {
     public ApiResponse<PageResult<Department>> list(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String departmentType,
+            @RequestParam(required = false) Long parentId,
             @RequestParam(required = false) Boolean excludeRoot,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        return ApiResponse.success(adminDepartmentService.list(name, departmentType, excludeRoot, page, size));
+        return ApiResponse.success(adminDepartmentService.list(name, departmentType, parentId, excludeRoot, page, size));
     }
 
     @Operation(summary = "新增科室", security = {@SecurityRequirement(name = HttpHeaders.AUTHORIZATION)})

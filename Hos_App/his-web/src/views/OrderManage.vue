@@ -102,10 +102,10 @@ onMounted(loadList)
             <el-input v-model="query.doctorName" placeholder="医生姓名" clearable style="width: 200px" @keyup.enter="handleSearch" />
           </el-form-item>
           <el-form-item label="就诊日期">
-            <el-date-picker v-model="query.visitDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 200px" />
+            <el-date-picker v-model="query.visitDate" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" style="width: 200px" @change="handleSearch" />
           </el-form-item>
           <el-form-item label="状态">
-            <el-select v-model="query.status" placeholder="全部" clearable style="width: 200px">
+            <el-select v-model="query.status" placeholder="全部" clearable style="width: 200px" @change="handleSearch">
               <el-option v-for="item in STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </el-form-item>
