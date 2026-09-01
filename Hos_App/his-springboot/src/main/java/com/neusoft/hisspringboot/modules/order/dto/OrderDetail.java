@@ -23,6 +23,7 @@ public record OrderDetail(
         LocalDateTime paidAt,
         LocalDateTime cancelledAt,
         String cancelReason,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        String contactName
 ) {
 }

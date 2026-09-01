@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@Tag(name = "科室", description = "科室树查询")
+@Tag(name = "科室管理", description = "科室树查询与后台科室新增、编辑、停用、删除")
 @RestController
 @RequiredArgsConstructor
 public class DepartmentController {

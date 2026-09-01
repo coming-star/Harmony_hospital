@@ -2,6 +2,8 @@ package com.neusoft.hisspringboot.modules.order.controller;
 
 import com.neusoft.hisspringboot.common.ApiResponse;
 import com.neusoft.hisspringboot.common.PageResult;
+import com.neusoft.hisspringboot.modules.order.dto.DailyCount;
+import com.neusoft.hisspringboot.modules.order.dto.DepartmentCount;
 import com.neusoft.hisspringboot.modules.order.dto.OrderDetail;
 import com.neusoft.hisspringboot.modules.order.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,8 +15,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
-@Tag(name = "后台-挂号记录", description = "WEB-08 挂号记录查询与管理员取消")
+@Tag(name = "挂号记录管理", description = "预约下单、支付、取消、查询与后台挂号记录查询、管理员取消")
 @RestController
 @RequestMapping("/api/admin/orders")
 @RequiredArgsConstructor
@@ -42,5 +45,17 @@ public class AdminOrderController {
     @PutMapping("/{id}/cancel")
     public ApiResponse<OrderDetail> cancel(@PathVariable Long id) {
         return ApiResponse.success(orderService.cancelByAdmin(id));
+    }
+
+    @Operation(summary = "近7天预约量趋势", security = {@SecurityRequirement(name = HttpHeaders.AUTHORIZATION)})
+    @GetMapping("/stats/daily-trend")
+    public ApiResponse<List<DailyCount>> dailyTrend() {
+        return ApiResponse.success(orderService.dailyTrend());
+    }
+
+    @Operation(summary = "科室预约量TOP5", security = {@SecurityRequirement(name = HttpHeaders.AUTHORIZATION)})
+    @GetMapping("/stats/department-top")
+    public ApiResponse<List<DepartmentCount>> departmentTop() {
+        return ApiResponse.success(orderService.departmentTop5());
     }
 }

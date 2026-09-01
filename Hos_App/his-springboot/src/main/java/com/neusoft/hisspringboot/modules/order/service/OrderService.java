@@ -15,6 +15,8 @@ import com.neusoft.hisspringboot.modules.doctor.mapper.DoctorMapper;
 import com.neusoft.hisspringboot.modules.level.entity.RegistrationLevel;
 import com.neusoft.hisspringboot.modules.level.mapper.RegistrationLevelMapper;
 import com.neusoft.hisspringboot.modules.order.dto.CreateOrderRequest;
+import com.neusoft.hisspringboot.modules.order.dto.DailyCount;
+import com.neusoft.hisspringboot.modules.order.dto.DepartmentCount;
 import com.neusoft.hisspringboot.modules.order.dto.OrderDetail;
 import com.neusoft.hisspringboot.modules.order.entity.PaymentRecord;
 import com.neusoft.hisspringboot.modules.order.entity.RegistrationOrder;
@@ -33,7 +35,11 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 挂号订单核心流程；状态机与并发扣号约定见 docs/06-挂号流程与状态机.md。
@@ -241,6 +247,54 @@ public class OrderService {
         return PageResult.of(records, mpPage.getTotal(), page, size);
     }
 
+    /**
+     * 后台统计：近 7 天预约量趋势（按就诊日期，排除已取消，缺失日期补 0）。
+     */
+    public List<DailyCount> dailyTrend() {
+        LocalDate end = LocalDate.now();
+        LocalDate start = end.minusDays(6);
+
+        Map<LocalDate, Long> counts = orderMapper.selectList(
+                new LambdaQueryWrapper<RegistrationOrder>()
+                        .ge(RegistrationOrder::getVisitDate, start)
+                        .le(RegistrationOrder::getVisitDate, end)
+                        .ne(RegistrationOrder::getStatus, STATUS_CANCELLED)
+        ).stream().collect(Collectors.groupingBy(RegistrationOrder::getVisitDate, Collectors.counting()));
+
+        List<DailyCount> result = new ArrayList<>();
+        for (int i = 0; i < 7; i++) {
+            LocalDate date = start.plusDays(i);
+            result.add(new DailyCount(date, counts.getOrDefault(date, 0L)));
+        }
+        return result;
+    }
+
+    /**
+     * 后台统计：近 7 天科室预约量 TOP5（按就诊日期，排除已取消）。
+     */
+    public List<DepartmentCount> departmentTop5() {
+        LocalDate end = LocalDate.now();
+        LocalDate start = end.minusDays(6);
+
+        Map<String, Long> counts = orderMapper.selectList(
+                new LambdaQueryWrapper<RegistrationOrder>()
+                        .ge(RegistrationOrder::getVisitDate, start)
+                        .le(RegistrationOrder::getVisitDate, end)
+                        .ne(RegistrationOrder::getStatus, STATUS_CANCELLED)
+        ).stream().collect(Collectors.groupingBy(
+                order -> order.getDepartmentNameSnapshot() != null
+                        ? order.getDepartmentNameSnapshot()
+                        : String.valueOf(order.getDepartmentId()),
+                Collectors.counting()
+        ));
+
+        return counts.entrySet().stream()
+                .map(entry -> new DepartmentCount(entry.getKey(), entry.getValue()))
+                .sorted(Comparator.comparingLong(DepartmentCount::count).reversed())
+                .limit(5)
+                .toList();
+    }
+
     @Transactional
     public OrderDetail cancelByAdmin(Long orderId) {
         if (orderMapper.selectById(orderId) == null) {
@@ -325,6 +379,11 @@ public class OrderService {
     }
 
     private OrderDetail toDetail(RegistrationOrder order) {
+        String contactName = null;
+        if (order.getContactId() != null) {
+            PatientContact contact = patientContactMapper.selectById(order.getContactId());
+            contactName = contact == null ? null : contact.getName();
+        }
         return new OrderDetail(
                 order.getId(),
                 order.getOrderNo(),
@@ -344,7 +403,8 @@ public class OrderService {
                 order.getPaidAt(),
                 order.getCancelledAt(),
                 order.getCancelReason(),
-                order.getCreatedAt()
+                order.getCreatedAt(),
+                contactName
         );
     }
 

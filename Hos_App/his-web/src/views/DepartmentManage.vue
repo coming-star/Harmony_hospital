@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Plus, Edit, Delete } from '@element-plus/icons-vue'
+import { Search, Plus, Edit, Delete, Refresh } from '@element-plus/icons-vue'
 import { departmentApi } from '../api/admin'
 import request from '../api/request'
 
@@ -65,6 +65,13 @@ function handleSearch() {
   loadList()
 }
 
+function handleReset() {
+  query.name = ''
+  query.departmentType = ''
+  query.page = 1
+  loadList()
+}
+
 function handleSizeChange() {
   query.page = 1
   loadList()
@@ -121,6 +128,7 @@ onMounted(() => {
         </el-form-item>
         <el-form-item>
           <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
+          <el-button :icon="Refresh" @click="handleReset">重置</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -134,12 +142,12 @@ onMounted(() => {
       <el-table v-loading="loading" :data="tableData" border stripe>
         <el-table-column type="index" label="序号" width="60" align="center" :index="(index) => (query.page - 1) * query.size + index + 1" />
         <el-table-column prop="code" label="编码" width="120" />
-        <el-table-column prop="name" label="名称" width="160" />
-        <el-table-column prop="departmentType" label="类型" width="140">
+        <el-table-column prop="name" label="名称" min-width="150" show-overflow-tooltip />
+        <el-table-column prop="departmentType" label="类型" width="100" align="center">
           <template #default>门诊</template>
         </el-table-column>
-        <el-table-column prop="parentId" label="父级科室ID" width="120" />
-        <el-table-column prop="description" label="说明" show-overflow-tooltip />
+        <el-table-column prop="parentId" label="父级科室ID" width="110" />
+        <el-table-column prop="description" label="说明" min-width="160" show-overflow-tooltip class-name="cell-left" />
         <el-table-column label="状态" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="row.enabled === 1 ? 'success' : 'info'">{{ row.enabled === 1 ? '已启用' : '已停用' }}</el-tag>
