@@ -22,12 +22,15 @@ import com.neusoft.hisspringboot.modules.order.mapper.PaymentRecordMapper;
 import com.neusoft.hisspringboot.modules.order.mapper.RegistrationOrderMapper;
 import com.neusoft.hisspringboot.modules.schedule.entity.ScheduleSlot;
 import com.neusoft.hisspringboot.modules.schedule.mapper.ScheduleSlotMapper;
+import com.neusoft.hisspringboot.modules.user.entity.SysUser;
+import com.neusoft.hisspringboot.modules.user.mapper.SysUserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -47,6 +50,7 @@ public class OrderService {
     private static final String STATUS_CANCELLED = "CANCELLED";
 
     private static final String CANCEL_SOURCE_USER = "USER";
+    private static final String CANCEL_SOURCE_ADMIN = "ADMIN";
     private static final String CANCEL_SOURCE_TIMEOUT = "TIMEOUT";
 
     private static final int TIMEOUT_MINUTES = 15;
@@ -58,6 +62,7 @@ public class OrderService {
     private final DoctorMapper doctorMapper;
     private final DepartmentMapper departmentMapper;
     private final RegistrationLevelMapper registrationLevelMapper;
+    private final SysUserMapper sysUserMapper;
 
     @Transactional
     public OrderDetail createOrder(Long userId, CreateOrderRequest request) {
@@ -181,6 +186,68 @@ public class OrderService {
 
     public OrderDetail detail(Long userId, Long orderId) {
         return toDetail(getOwnedOrder(userId, orderId));
+    }
+
+    /**
+     * 后台"挂号记录"（WEB-08）分页查询；按订单号/患者手机号或姓名/就诊人姓名/医生姓名快照/日期/状态筛选。
+     */
+    public PageResult<OrderDetail> adminList(
+            String orderNo,
+            String patientKeyword,
+            String doctorName,
+            LocalDate visitDate,
+            String status,
+            int page,
+            int size
+    ) {
+        LambdaQueryWrapper<RegistrationOrder> wrapper = new LambdaQueryWrapper<RegistrationOrder>()
+                .like(orderNo != null && !orderNo.isBlank(), RegistrationOrder::getOrderNo, orderNo)
+                .like(doctorName != null && !doctorName.isBlank(), RegistrationOrder::getDoctorNameSnapshot, doctorName)
+                .eq(visitDate != null, RegistrationOrder::getVisitDate, visitDate)
+                .eq(status != null && !status.isBlank(), RegistrationOrder::getStatus, status)
+                .orderByDesc(RegistrationOrder::getCreatedAt);
+
+        if (patientKeyword != null && !patientKeyword.isBlank()) {
+            List<Long> userIds = sysUserMapper.selectList(
+                    new LambdaQueryWrapper<SysUser>()
+                            .like(SysUser::getPhone, patientKeyword)
+                            .or().like(SysUser::getNickname, patientKeyword)
+            ).stream().map(SysUser::getId).toList();
+
+            List<Long> contactIds = patientContactMapper.selectList(
+                    new LambdaQueryWrapper<PatientContact>().like(PatientContact::getName, patientKeyword)
+            ).stream().map(PatientContact::getId).toList();
+
+            if (userIds.isEmpty() && contactIds.isEmpty()) {
+                return PageResult.of(List.of(), 0, page, size);
+            }
+
+            wrapper.and(inner -> {
+                if (!userIds.isEmpty()) {
+                    inner.in(RegistrationOrder::getUserId, userIds);
+                }
+                if (!contactIds.isEmpty()) {
+                    if (!userIds.isEmpty()) {
+                        inner.or();
+                    }
+                    inner.in(RegistrationOrder::getContactId, contactIds);
+                }
+            });
+        }
+
+        Page<RegistrationOrder> mpPage = orderMapper.selectPage(new Page<>(page, size), wrapper);
+        List<OrderDetail> records = mpPage.getRecords().stream().map(this::toDetail).toList();
+
+        return PageResult.of(records, mpPage.getTotal(), page, size);
+    }
+
+    @Transactional
+    public OrderDetail cancelByAdmin(Long orderId) {
+        if (orderMapper.selectById(orderId) == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "挂号订单不存在");
+        }
+
+        return cancelInternal(orderId, CANCEL_SOURCE_ADMIN);
     }
 
     private OrderDetail cancelInternal(Long orderId, String cancelSource) {

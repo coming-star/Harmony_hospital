@@ -45,6 +45,7 @@
 | 409003 | 409 | `SLOT_SOLD_OUT` | 该时段已约满或状态已变化 | 预约下单条件更新失败（T06） |
 | 409004 | 409 | `ORDER_STATUS_CONFLICT` | 订单状态已变化，操作不可执行 | 重复支付/取消已终态订单（T07/T08） |
 | 409005 | 409 | `REFERENCED_BY_OTHER_RECORD` | 存在关联数据引用，请先停用 | 删除被排班/订单引用的科室/医生/号别（T09） |
+| 409006 | 409 | `CODE_ALREADY_EXISTS` | 编码已存在 | 科室/挂号级别新增或编辑时编码重复 |
 | 422001 | 422 | `BUSINESS_RULE_VIOLATION` | 业务规则校验未通过 | 排班规则冲突、限额非法等 |
 
 > 新增业务错误码须先在本表登记再编码，避免前后端字段/文案不一致。
@@ -98,7 +99,7 @@
 | --- | --- | --- | --- | --- | --- |
 | POST | `/api/orders` | 创建预约订单 | `{slotId, contactId, idempotencyKey}` | `OrderDetail`（状态 `PENDING_PAYMENT`） | `409003` |
 | POST | `/api/orders/{id}/pay` | 模拟支付 | - | `OrderDetail`（状态 `PAID`） | `409004` |
-| POST | `/api/orders/{id}/cancel` | 用户取消订单 | `{reason}` | `OrderDetail`（状态 `CANCELLED`） | `409004` |
+| POST | `/api/orders/{id}/cancel` | 用户取消订单 | 无请求体 | `OrderDetail`（状态 `CANCELLED`，`cancelReason=USER`） | `409004` |
 | GET | `/api/orders` | 我的挂号记录（分页） | `status, page, size` | `PageResult<OrderSummary>` | - |
 | GET | `/api/orders/{id}` | 订单详情 | - | `OrderDetail` | `404` |
 
@@ -113,18 +114,22 @@
 { "code": 409003, "message": "该时段已约满或状态已变化", "data": null }
 ```
 
-### 3.5 后台管理（D 负责实现，均为分页 CRUD + 逻辑删除）
+### 3.5 后台管理（已实现，均需 Bearer Token）
 
-| 方法 | 路径前缀 | 说明 |
-| --- | --- | --- |
-| `/api/admin/users` | 用户管理 | 列表(分页/筛选)、新增、编辑、停用、逻辑删除 |
-| `/api/admin/departments` | 科室管理 | 同上，含父级/类型筛选 |
-| `/api/admin/doctors` | 医生管理 | 同上，含科室/号别关联维护 |
-| `/api/admin/schedule-rules` | 排班规则管理 | 同上，含规则串预览 |
-| `/api/admin/levels` | 挂号级别管理 | 同上，编码唯一 |
-| `/api/admin/orders` | 挂号记录管理 | 分页查询 + 管理员取消 |
+> 8.31 分工表未把这 6 个资源的后端接口分配给任何人（D 的任务是 Vue 管理端页面本身），实际是管理端页面先按本节约定搭好后才发现的缺口，已由 A 补齐。
 
-列表接口统一以 `GET .../list?page=&size=&<筛选字段>` 返回 `PageResult<T>`；新增/编辑用 `POST` / `PUT`；停用与逻辑删除分别为 `PUT .../{id}/status`、`DELETE .../{id}`。删除前置校验引用关系失败时返回 `409005`。
+列表接口统一为 `GET {前缀}/list?page=&size=&<筛选字段>`，返回 `PageResult<T>`；新增 `POST {前缀}`；编辑 `PUT {前缀}/{id}`；启用/停用 `PUT {前缀}/{id}/status`，请求体统一为 `{"enabled": 1|0}`；逻辑删除 `DELETE {前缀}/{id}`。删除前置校验引用关系失败时返回 `409005`；编码唯一性冲突（科室/挂号级别）返回 `409006`。
+
+| 前缀 | 说明 | 列表筛选参数 | 请求体字段（新增/编辑） |
+| --- | --- | --- | --- |
+| `/api/admin/users` | 用户管理（仅 `PATIENT` 账号） | `phone, status` | `{phone, nickname, password}`（`password` 编辑时留空表示不改） |
+| `/api/admin/departments` | 科室管理 | `name, departmentType` | `Department` 实体字段：`{code, name, departmentType, parentId, description, sortNo}` |
+| `/api/admin/doctors` | 医生管理 | `name, departmentId` | `{name, departmentId, title, avatarUrl, introduction, levelIds}`；`levelIds` 变更会整体替换 `doctor_registration_level` 关联 |
+| `/api/admin/schedule-rules` | 排班规则管理 | 无（仅分页） | `ScheduleRule` 实体字段：`{doctorId, levelId, ruleName, weekdayMask, period, slotsJson, effectiveStart, effectiveEnd}` |
+| `/api/admin/levels` | 挂号级别管理 | 无（仅分页） | `RegistrationLevel` 实体字段：`{code, name, feeFen, defaultQuota, sortNo}` |
+| `/api/admin/orders` | 挂号记录查询 + 管理员取消 | `orderNo, patientKeyword, doctorName, visitDate, status` | 取消接口 `PUT /api/admin/orders/{id}/cancel` 无请求体 |
+
+`patientKeyword` 按手机号/昵称匹配 `sys_user`、按姓名匹配 `patient_contact`，取并集；医生筛选直接匹配订单快照字段 `doctorNameSnapshot`（无需关联医生表）。
 
 ### 3.6 AI 管家（P1，本期契约冻结但不阻塞主线）
 
