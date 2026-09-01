@@ -8,7 +8,6 @@ public record DoctorDetailResponse(
         Long departmentId,
         String departmentName,
         String title,
-        String avatarUrl,
         String introduction,
         List<DoctorLevelBrief> levels
 ) {

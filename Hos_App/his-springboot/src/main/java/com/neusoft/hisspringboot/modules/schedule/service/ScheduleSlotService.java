@@ -61,7 +61,6 @@ public class ScheduleSlotService {
                 slot.getId(),
                 slot.getDoctorId(),
                 doctor == null ? null : doctor.getName(),
-                doctor == null ? null : doctor.getAvatarUrl(),
                 slot.getDepartmentId(),
                 slot.getLevelId(),
                 level == null ? null : level.getName(),

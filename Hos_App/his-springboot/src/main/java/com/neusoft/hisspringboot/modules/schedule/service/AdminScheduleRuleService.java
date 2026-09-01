@@ -14,9 +14,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class AdminScheduleRuleService {
+
+    private static final String[] WEEKDAY_LABELS = {"周一", "周二", "周三", "周四", "周五", "周六", "周日"};
+    private static final String PERIOD_MORNING = "MORNING";
+    private static final String PERIOD_AFTERNOON = "AFTERNOON";
 
     private final ScheduleRuleMapper scheduleRuleMapper;
     private final ScheduleSlotMapper scheduleSlotMapper;
@@ -29,6 +36,7 @@ public class AdminScheduleRuleService {
                         .orderByDesc(ScheduleRule::getCreatedAt)
         );
 
+        mpPage.getRecords().forEach(this::fillComputedFields);
         return PageResult.of(mpPage.getRecords(), mpPage.getTotal(), page, size);
     }
 
@@ -73,5 +81,44 @@ public class AdminScheduleRuleService {
         }
 
         return rule;
+    }
+
+    void fillComputedFields(ScheduleRule rule) {
+        rule.setRuleCode(buildRuleCode(rule.getWeekdayMask(), rule.getPeriod()));
+        rule.setScheduleOverview(buildOverview(rule.getWeekdayMask(), rule.getPeriod()));
+    }
+
+    static String buildRuleCode(Integer weekdayMask, String period) {
+        if (weekdayMask == null) weekdayMask = 0;
+        int periodCode = switch (period) {
+            case PERIOD_MORNING -> 0b10;
+            case PERIOD_AFTERNOON -> 0b01;
+            case "FULL" -> 0b11;
+            default -> 0b00;
+        };
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 7; i++) {
+            boolean hasDay = (weekdayMask >> i & 1) == 1;
+            int code = hasDay ? periodCode : 0;
+            sb.append((code >> 1) & 1).append(code & 1);
+        }
+        return sb.toString();
+    }
+
+    static List<String> buildOverview(Integer weekdayMask, String period) {
+        List<String> result = new ArrayList<>();
+        if (weekdayMask == null) return result;
+        String periodLabel = switch (period) {
+            case PERIOD_MORNING -> "上午";
+            case PERIOD_AFTERNOON -> "下午";
+            case "FULL" -> "全天";
+            default -> "";
+        };
+        for (int i = 0; i < 7; i++) {
+            if (((weekdayMask >> i) & 1) == 1) {
+                result.add(WEEKDAY_LABELS[i] + periodLabel);
+            }
+        }
+        return result;
     }
 }

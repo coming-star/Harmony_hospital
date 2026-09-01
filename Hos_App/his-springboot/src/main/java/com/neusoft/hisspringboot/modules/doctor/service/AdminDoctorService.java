@@ -5,13 +5,17 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.neusoft.hisspringboot.common.BusinessException;
 import com.neusoft.hisspringboot.common.ErrorCode;
 import com.neusoft.hisspringboot.common.PageResult;
+import com.neusoft.hisspringboot.modules.department.entity.Department;
+import com.neusoft.hisspringboot.modules.department.mapper.DepartmentMapper;
 import com.neusoft.hisspringboot.modules.doctor.dto.AdminDoctorRequest;
 import com.neusoft.hisspringboot.modules.doctor.dto.AdminDoctorResponse;
 import com.neusoft.hisspringboot.modules.doctor.dto.DoctorScheduleRuleBrief;
 import com.neusoft.hisspringboot.modules.doctor.entity.Doctor;
 import com.neusoft.hisspringboot.modules.doctor.entity.DoctorRegistrationLevel;
+import com.neusoft.hisspringboot.modules.doctor.entity.DoctorScheduleRule;
 import com.neusoft.hisspringboot.modules.doctor.mapper.DoctorMapper;
 import com.neusoft.hisspringboot.modules.doctor.mapper.DoctorRegistrationLevelMapper;
+import com.neusoft.hisspringboot.modules.doctor.mapper.DoctorScheduleRuleMapper;
 import com.neusoft.hisspringboot.modules.level.entity.RegistrationLevel;
 import com.neusoft.hisspringboot.modules.level.mapper.RegistrationLevelMapper;
 import com.neusoft.hisspringboot.modules.schedule.entity.ScheduleRule;
@@ -24,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -33,17 +38,35 @@ import java.util.stream.Collectors;
 public class AdminDoctorService {
 
     private final DoctorMapper doctorMapper;
+    private final DepartmentMapper departmentMapper;
     private final DoctorRegistrationLevelMapper doctorRegistrationLevelMapper;
+    private final DoctorScheduleRuleMapper doctorScheduleRuleMapper;
     private final ScheduleRuleMapper scheduleRuleMapper;
     private final ScheduleSlotMapper scheduleSlotMapper;
     private final RegistrationLevelMapper registrationLevelMapper;
 
     public PageResult<AdminDoctorResponse> list(String name, Long departmentId, int page, int size) {
+        List<Long> effectiveDeptIds = null;
+        if (departmentId != null) {
+            Department selected = departmentMapper.selectById(departmentId);
+            if (selected != null && (selected.getParentId() == null || selected.getParentId() == 0)) {
+                effectiveDeptIds = departmentMapper.selectList(
+                        new LambdaQueryWrapper<Department>().eq(Department::getParentId, departmentId)
+                ).stream().map(Department::getId).collect(Collectors.toList());
+                if (effectiveDeptIds.isEmpty()) {
+                    effectiveDeptIds = List.of(-1L);
+                }
+            } else {
+                effectiveDeptIds = new ArrayList<>();
+                effectiveDeptIds.add(departmentId);
+            }
+        }
+
         Page<Doctor> mpPage = doctorMapper.selectPage(
                 new Page<>(page, size),
                 new LambdaQueryWrapper<Doctor>()
                         .like(name != null && !name.isBlank(), Doctor::getName, name)
-                        .eq(departmentId != null, Doctor::getDepartmentId, departmentId)
+                        .in(effectiveDeptIds != null, Doctor::getDepartmentId, effectiveDeptIds)
                         .orderByDesc(Doctor::getCreatedAt)
         );
 
@@ -54,6 +77,9 @@ public class AdminDoctorService {
         }
 
         List<Long> doctorIds = doctors.stream().map(Doctor::getId).toList();
+        Map<Long, String> deptNameById = departmentMapper.selectBatchIds(
+                doctors.stream().map(Doctor::getDepartmentId).distinct().toList()
+        ).stream().collect(Collectors.toMap(Department::getId, Department::getName, (a, b) -> a));
         Map<Long, List<Long>> levelIdsByDoctorId = doctorRegistrationLevelMapper.selectList(
                 new LambdaQueryWrapper<DoctorRegistrationLevel>().in(DoctorRegistrationLevel::getDoctorId, doctorIds)
         ).stream().collect(Collectors.groupingBy(
@@ -61,34 +87,50 @@ public class AdminDoctorService {
                 Collectors.mapping(DoctorRegistrationLevel::getLevelId, Collectors.toList())
         ));
 
-        List<ScheduleRule> scheduleRules = scheduleRuleMapper.selectList(
-                new LambdaQueryWrapper<ScheduleRule>().in(ScheduleRule::getDoctorId, doctorIds)
+        List<DoctorScheduleRule> doctorRuleRelations = doctorScheduleRuleMapper.selectList(
+                new LambdaQueryWrapper<DoctorScheduleRule>().in(DoctorScheduleRule::getDoctorId, doctorIds)
         );
 
-        Map<Long, String> levelNameById = scheduleRules.isEmpty()
+        Map<Long, List<Long>> ruleIdsByDoctorId = doctorRuleRelations.stream()
+                .collect(Collectors.groupingBy(
+                        DoctorScheduleRule::getDoctorId,
+                        Collectors.mapping(DoctorScheduleRule::getScheduleRuleId, Collectors.toList())
+                ));
+
+        List<Long> allRuleIds = doctorRuleRelations.stream()
+                .map(DoctorScheduleRule::getScheduleRuleId).distinct().toList();
+
+        Map<Long, ScheduleRule> ruleById = allRuleIds.isEmpty()
+                ? Map.of()
+                : scheduleRuleMapper.selectBatchIds(allRuleIds).stream()
+                        .collect(Collectors.toMap(ScheduleRule::getId, r -> r));
+
+        Map<Long, String> levelNameById = allRuleIds.isEmpty()
                 ? Map.of()
                 : registrationLevelMapper.selectBatchIds(
-                        scheduleRules.stream().map(ScheduleRule::getLevelId).distinct().toList()
+                        ruleById.values().stream().map(ScheduleRule::getLevelId).distinct().toList()
                 ).stream().collect(Collectors.toMap(RegistrationLevel::getId, RegistrationLevel::getName));
 
-        Map<Long, List<DoctorScheduleRuleBrief>> scheduleRulesByDoctorId = scheduleRules.stream()
-                .collect(Collectors.groupingBy(
-                        ScheduleRule::getDoctorId,
-                        Collectors.mapping(
-                                rule -> new DoctorScheduleRuleBrief(
+        Map<Long, List<DoctorScheduleRuleBrief>> scheduleRulesByDoctorId = doctorIds.stream()
+                .collect(Collectors.toMap(
+                        did -> did,
+                        did -> ruleIdsByDoctorId.getOrDefault(did, List.of()).stream()
+                                .map(ruleById::get).filter(r -> r != null)
+                                .map(rule -> new DoctorScheduleRuleBrief(
+                                        rule.getId(),
                                         rule.getLevelId(),
                                         levelNameById.get(rule.getLevelId()),
                                         rule.getRuleName(),
                                         rule.getWeekdayMask(),
                                         rule.getPeriod()
-                                ),
-                                Collectors.toList()
-                        )
+                                ))
+                                .toList()
                 ));
 
         List<AdminDoctorResponse> records = doctors.stream()
                 .map(doctor -> toResponse(
                         doctor,
+                        deptNameById.getOrDefault(doctor.getDepartmentId(), ""),
                         levelIdsByDoctorId.getOrDefault(doctor.getId(), List.of()),
                         scheduleRulesByDoctorId.getOrDefault(doctor.getId(), List.of())
                 ))
@@ -103,12 +145,12 @@ public class AdminDoctorService {
         doctor.setName(request.name());
         doctor.setDepartmentId(request.departmentId());
         doctor.setTitle(request.title());
-        doctor.setAvatarUrl(request.avatarUrl());
         doctor.setIntroduction(request.introduction());
         doctor.setEnabled(1);
         doctorMapper.insert(doctor);
 
         replaceLevels(doctor.getId(), request.levelIds());
+        replaceScheduleRules(doctor.getId(), request.scheduleRuleIds());
 
         return doctor.getId();
     }
@@ -119,11 +161,11 @@ public class AdminDoctorService {
         doctor.setName(request.name());
         doctor.setDepartmentId(request.departmentId());
         doctor.setTitle(request.title());
-        doctor.setAvatarUrl(request.avatarUrl());
         doctor.setIntroduction(request.introduction());
         doctorMapper.updateById(doctor);
 
         replaceLevels(id, request.levelIds());
+        replaceScheduleRules(id, request.scheduleRuleIds());
     }
 
     public void toggleStatus(Long id, Integer enabled) {
@@ -135,16 +177,17 @@ public class AdminDoctorService {
     public void delete(Long id) {
         getOrThrow(id);
 
-        Long ruleCount = scheduleRuleMapper.selectCount(
-                new LambdaQueryWrapper<ScheduleRule>().eq(ScheduleRule::getDoctorId, id)
-        );
         Long slotCount = scheduleSlotMapper.selectCount(
                 new LambdaQueryWrapper<ScheduleSlot>().eq(ScheduleSlot::getDoctorId, id)
         );
 
-        if (ruleCount > 0 || slotCount > 0) {
+        if (slotCount > 0) {
             throw new BusinessException(ErrorCode.REFERENCED_BY_OTHER_RECORD);
         }
+
+        doctorScheduleRuleMapper.delete(
+                new LambdaQueryWrapper<DoctorScheduleRule>().eq(DoctorScheduleRule::getDoctorId, id)
+        );
 
         doctorMapper.deleteById(id);
     }
@@ -167,6 +210,24 @@ public class AdminDoctorService {
         }
     }
 
+    private void replaceScheduleRules(Long doctorId, List<Long> ruleIds) {
+        doctorScheduleRuleMapper.delete(
+                new LambdaQueryWrapper<DoctorScheduleRule>().eq(DoctorScheduleRule::getDoctorId, doctorId)
+        );
+
+        if (ruleIds == null || ruleIds.isEmpty()) {
+            return;
+        }
+
+        List<ScheduleRule> validRules = scheduleRuleMapper.selectBatchIds(ruleIds);
+        for (ScheduleRule rule : validRules) {
+            DoctorScheduleRule rel = new DoctorScheduleRule();
+            rel.setDoctorId(doctorId);
+            rel.setScheduleRuleId(rule.getId());
+            doctorScheduleRuleMapper.insert(rel);
+        }
+    }
+
     private Doctor getOrThrow(Long id) {
         Doctor doctor = doctorMapper.selectById(id);
 
@@ -179,6 +240,7 @@ public class AdminDoctorService {
 
     private AdminDoctorResponse toResponse(
             Doctor doctor,
+            String departmentName,
             List<Long> levelIds,
             List<DoctorScheduleRuleBrief> scheduleRules
     ) {
@@ -186,8 +248,8 @@ public class AdminDoctorService {
                 doctor.getId(),
                 doctor.getName(),
                 doctor.getDepartmentId(),
+                departmentName,
                 doctor.getTitle(),
-                doctor.getAvatarUrl(),
                 doctor.getIntroduction(),
                 doctor.getEnabled(),
                 levelIds,

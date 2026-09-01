@@ -1,8 +1,8 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus, Edit, Delete, Refresh } from '@element-plus/icons-vue'
-import { doctorApi, levelApi } from '../api/admin'
+import { doctorApi, levelApi, scheduleRuleApi } from '../api/admin'
 import request from '../api/request'
 
 const WEEKDAYS = [
@@ -18,6 +18,7 @@ const WEEKDAYS = [
 const PERIODS = [
   { label: '上午', value: 'MORNING' },
   { label: '下午', value: 'AFTERNOON' },
+  { label: '全天', value: 'FULL' },
   { label: '晚上', value: 'EVENING' },
 ]
 
@@ -38,6 +39,17 @@ const tableData = ref([])
 const total = ref(0)
 const departmentOptions = ref([])
 const levelOptions = ref([])
+const scheduleRuleOptions = ref([])
+
+const secondLevelByParent = computed(() => {
+  const map = {}
+  for (const first of departmentOptions.value) {
+    map[first.id] = first.children || []
+  }
+  return map
+})
+
+const availableScheduleRules = computed(() => scheduleRuleOptions.value)
 
 const query = reactive({
   name: '',
@@ -52,11 +64,16 @@ const formRef = ref()
 const form = reactive({
   id: null,
   name: '',
+  parentDepartmentId: null,
   departmentId: null,
   title: '',
-  avatarUrl: '',
   introduction: '',
   levelIds: [],
+  scheduleRuleIds: [],
+})
+
+watch(() => form.parentDepartmentId, () => {
+  form.departmentId = null
 })
 
 const rules = {
@@ -92,6 +109,15 @@ async function loadLevelOptions() {
   }
 }
 
+async function loadScheduleRuleOptions() {
+  try {
+    const data = await scheduleRuleApi.list({ page: 1, size: 200 })
+    scheduleRuleOptions.value = data.records || []
+  } catch {
+    scheduleRuleOptions.value = []
+  }
+}
+
 function handleSearch() {
   query.page = 1
   loadList()
@@ -111,14 +137,33 @@ function handleSizeChange() {
 
 function openCreate() {
   dialogMode.value = 'create'
-  Object.assign(form, { id: null, name: '', departmentId: null, title: '', avatarUrl: '', introduction: '', levelIds: [] })
+  Object.assign(form, { id: null, name: '', parentDepartmentId: null, departmentId: null, title: '', introduction: '', levelIds: [], scheduleRuleIds: [] })
   dialogVisible.value = true
 }
 
 function openEdit(row) {
   dialogMode.value = 'edit'
-  Object.assign(form, { ...row })
+  const parentId = findParentId(row.departmentId)
+  Object.assign(form, {
+    id: row.id,
+    name: row.name,
+    parentDepartmentId: parentId,
+    departmentId: row.departmentId,
+    title: row.title,
+    introduction: row.introduction,
+    levelIds: row.levelIds || [],
+    scheduleRuleIds: (row.scheduleRules || []).map((r) => r.ruleId),
+  })
   dialogVisible.value = true
+}
+
+function findParentId(deptId) {
+  for (const first of departmentOptions.value) {
+    if ((first.children || []).some((c) => c.id === deptId)) {
+      return first.id
+    }
+  }
+  return null
 }
 
 async function handleSubmit() {
@@ -157,6 +202,7 @@ onMounted(() => {
   loadList()
   loadDepartmentOptions()
   loadLevelOptions()
+  loadScheduleRuleOptions()
 })
 </script>
 
@@ -167,7 +213,7 @@ onMounted(() => {
         <el-form-item label="姓名">
           <el-input v-model="query.name" placeholder="医生姓名" clearable @keyup.enter="handleSearch" />
         </el-form-item>
-        <el-form-item label="科室">
+        <el-form-item label="一级科室">
           <el-select v-model="query.departmentId" placeholder="全部" clearable style="width: 160px" @change="handleSearch">
             <el-option v-for="dept in departmentOptions" :key="dept.id" :label="dept.name" :value="dept.id" />
           </el-select>
@@ -187,14 +233,9 @@ onMounted(() => {
 
       <el-table v-loading="loading" :data="tableData" border stripe>
         <el-table-column type="index" label="序号" width="60" align="center" :index="(index) => (query.page - 1) * query.size + index + 1" />
-        <el-table-column label="头像" width="80" align="center">
-          <template #default="{ row }">
-            <el-avatar :size="36" :src="row.avatarUrl" />
-          </template>
-        </el-table-column>
         <el-table-column prop="name" label="姓名" width="110" />
         <el-table-column prop="title" label="职称" width="130" />
-        <el-table-column prop="departmentId" label="科室ID" width="100" />
+        <el-table-column prop="departmentName" label="所属科室" width="120" />
         <el-table-column prop="introduction" label="简介" min-width="160" show-overflow-tooltip class-name="cell-left" />
         <el-table-column label="挂号级别" width="140">
           <template #default="{ row }">
@@ -257,20 +298,37 @@ onMounted(() => {
         <el-form-item label="姓名" prop="name">
           <el-input v-model="form.name" />
         </el-form-item>
-        <el-form-item label="所属科室" prop="departmentId">
-          <el-select v-model="form.departmentId" style="width: 100%">
+        <el-form-item label="一级科室" prop="parentDepartmentId">
+          <el-select v-model="form.parentDepartmentId" placeholder="请选择一级科室" style="width: 100%">
             <el-option v-for="dept in departmentOptions" :key="dept.id" :label="dept.name" :value="dept.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="二级科室" prop="departmentId">
+          <el-select v-model="form.departmentId" placeholder="请选择二级科室" style="width: 100%" :disabled="!form.parentDepartmentId">
+            <el-option v-for="dept in (secondLevelByParent[form.parentDepartmentId] || [])" :key="dept.id" :label="dept.name" :value="dept.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="职称">
           <el-input v-model="form.title" placeholder="如主任医师" />
         </el-form-item>
-        <el-form-item label="头像地址">
-          <el-input v-model="form.avatarUrl" />
-        </el-form-item>
         <el-form-item label="挂号级别">
           <el-select v-model="form.levelIds" multiple style="width: 100%">
             <el-option v-for="level in levelOptions" :key="level.id" :label="level.name" :value="level.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="排班规则">
+          <el-select v-model="form.scheduleRuleIds" multiple style="width: 100%" placeholder="可选">
+            <el-option
+              v-for="rule in availableScheduleRules"
+              :key="rule.id"
+              :label="rule.ruleName"
+              :value="rule.id"
+            >
+              <span>{{ rule.ruleName }}</span>
+              <span style="float: right; color: #999; font-size: 12px">
+                {{ weekdayLabel(rule.weekdayMask) }} {{ periodLabel(rule.period) }}
+              </span>
+            </el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="简介">

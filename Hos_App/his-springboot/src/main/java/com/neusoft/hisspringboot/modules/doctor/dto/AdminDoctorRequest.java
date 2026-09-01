@@ -13,8 +13,8 @@ public record AdminDoctorRequest(
         Long departmentId,
 
         String title,
-        String avatarUrl,
         String introduction,
-        List<Long> levelIds
+        List<Long> levelIds,
+        List<Long> scheduleRuleIds
 ) {
 }

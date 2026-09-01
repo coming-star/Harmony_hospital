@@ -1,6 +1,7 @@
 package com.neusoft.hisspringboot.modules.schedule.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -8,6 +9,7 @@ import lombok.Data;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @TableName("schedule_rule")
@@ -16,7 +18,6 @@ public class ScheduleRule {
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
-    private Long doctorId;
     private Long levelId;
     private String ruleName;
 
@@ -44,4 +45,10 @@ public class ScheduleRule {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    @TableField(exist = false)
+    private String ruleCode;
+
+    @TableField(exist = false)
+    private List<String> scheduleOverview;
 }

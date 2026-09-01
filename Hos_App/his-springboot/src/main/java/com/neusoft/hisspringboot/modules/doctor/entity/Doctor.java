@@ -18,7 +18,6 @@ public class Doctor {
     private String name;
     private Long departmentId;
     private String title;
-    private String avatarUrl;
     private String introduction;
     private Integer enabled;
 

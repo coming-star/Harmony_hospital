@@ -2,28 +2,21 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus, Edit, Delete, Refresh } from '@element-plus/icons-vue'
-import { scheduleRuleApi, doctorApi } from '../api/admin'
+import { scheduleRuleApi } from '../api/admin'
 
 const WEEKDAYS = [
-  { label: '周一', bit: 1 },
-  { label: '周二', bit: 2 },
-  { label: '周三', bit: 4 },
-  { label: '周四', bit: 8 },
-  { label: '周五', bit: 16 },
-  { label: '周六', bit: 32 },
-  { label: '周日', bit: 64 },
-]
-
-const PERIODS = [
-  { label: '上午', value: 'MORNING' },
-  { label: '下午', value: 'AFTERNOON' },
-  { label: '晚上', value: 'EVENING' },
+  { label: '周一', key: 1 },
+  { label: '周二', key: 2 },
+  { label: '周三', key: 4 },
+  { label: '周四', key: 8 },
+  { label: '周五', key: 16 },
+  { label: '周六', key: 32 },
+  { label: '周日', key: 64 },
 ]
 
 const loading = ref(false)
 const tableData = ref([])
 const total = ref(0)
-const doctorOptions = ref([])
 
 const query = reactive({
   ruleName: '',
@@ -34,48 +27,80 @@ const query = reactive({
 const dialogVisible = ref(false)
 const dialogMode = ref('create')
 const formRef = ref()
+
+function createGrid() {
+  const g = {}
+  WEEKDAYS.forEach((d) => { g[d.key] = { morning: false, afternoon: false } })
+  return g
+}
+
 const form = reactive({
   id: null,
-  doctorId: null,
   levelId: null,
   ruleName: '',
-  weekdays: [],
-  period: 'MORNING',
-  slots: [{ start: '08:00', end: '08:30', quota: 10 }],
+  scheduleGrid: createGrid(),
   effectiveStart: '',
   effectiveEnd: '',
 })
 
 const rules = {
   ruleName: [{ required: true, message: '请输入排班说明', trigger: 'blur' }],
-  doctorId: [{ required: true, message: '请选择医生', trigger: 'change' }],
   effectiveStart: [{ required: true, message: '请选择生效开始日期', trigger: 'change' }],
 }
 
-const weekdayMask = computed(() => form.weekdays.reduce((sum, bit) => sum + bit, 0))
-
-const humanPreview = computed(() => {
-  const names = WEEKDAYS.filter((item) => form.weekdays.includes(item.bit)).map((item) => item.label).join('、')
-  const periodLabel = PERIODS.find((item) => item.value === form.period)?.label || ''
-  return `${names || '未选择星期'} ${periodLabel} 共 ${form.slots.length} 个时段`
+const weekdayMask = computed(() => {
+  let mask = 0
+  WEEKDAYS.forEach((d) => {
+    const cell = form.scheduleGrid[d.key]
+    if (cell.morning || cell.afternoon) mask += d.key
+  })
+  return mask
 })
 
-const ruleCode = computed(() => `${weekdayMask.value}-${form.period}`)
+const hasAnySelection = computed(() => {
+  return WEEKDAYS.some((d) => form.scheduleGrid[d.key].morning || form.scheduleGrid[d.key].afternoon)
+})
+
+const period = computed(() => {
+  let hasMorning = false
+  let hasAfternoon = false
+  WEEKDAYS.forEach((d) => {
+    const cell = form.scheduleGrid[d.key]
+    if (cell.morning) hasMorning = true
+    if (cell.afternoon) hasAfternoon = true
+  })
+  if (hasMorning && hasAfternoon) return 'FULL'
+  if (hasMorning) return 'MORNING'
+  if (hasAfternoon) return 'AFTERNOON'
+  return 'MORNING'
+})
+
+const ruleCode = computed(() => {
+  let sb = ''
+  WEEKDAYS.forEach((d) => {
+    const cell = form.scheduleGrid[d.key]
+    sb += cell.morning ? '1' : '0'
+    sb += cell.afternoon ? '1' : '0'
+  })
+  return sb
+})
+
+const overviewPreview = computed(() => {
+  const labels = []
+  WEEKDAYS.forEach((d) => {
+    const cell = form.scheduleGrid[d.key]
+    if (cell.morning) labels.push(d.label + '上午')
+    if (cell.afternoon) labels.push(d.label + '下午')
+  })
+  return labels
+})
 
 function weekdayLabel(mask) {
-  return WEEKDAYS.filter((item) => (mask & item.bit) === item.bit).map((item) => item.label).join('、') || '-'
+  return WEEKDAYS.filter((d) => (mask & d.key) === d.key).map((d) => d.label).join('、') || '-'
 }
 
-function periodLabel(period) {
-  return PERIODS.find((item) => item.value === period)?.label || period
-}
-
-function addSlot() {
-  form.slots.push({ start: '', end: '', quota: 10 })
-}
-
-function removeSlot(index) {
-  form.slots.splice(index, 1)
+function periodLabel(p) {
+  return { MORNING: '上午', AFTERNOON: '下午', FULL: '全天', EVENING: '晚上' }[p] || p
 }
 
 async function loadList() {
@@ -86,15 +111,6 @@ async function loadList() {
     total.value = data.total
   } finally {
     loading.value = false
-  }
-}
-
-async function loadDoctorOptions() {
-  try {
-    const data = await doctorApi.list({ page: 1, size: 200 })
-    doctorOptions.value = data.records
-  } catch {
-    doctorOptions.value = []
   }
 }
 
@@ -118,12 +134,9 @@ function openCreate() {
   dialogMode.value = 'create'
   Object.assign(form, {
     id: null,
-    doctorId: null,
     levelId: null,
     ruleName: '',
-    weekdays: [],
-    period: 'MORNING',
-    slots: [{ start: '08:00', end: '08:30', quota: 10 }],
+    scheduleGrid: createGrid(),
     effectiveStart: '',
     effectiveEnd: '',
   })
@@ -132,20 +145,38 @@ function openCreate() {
 
 function openEdit(row) {
   dialogMode.value = 'edit'
+  const grid = createGrid()
+  const periodCodeMap = { MORNING: { morning: true, afternoon: false }, AFTERNOON: { morning: false, afternoon: true }, FULL: { morning: true, afternoon: true } }
+  const cell = periodCodeMap[row.period] || { morning: false, afternoon: false }
+  WEEKDAYS.forEach((d) => {
+    if ((row.weekdayMask & d.key) === d.key) {
+      grid[d.key] = { ...cell }
+    }
+  })
   Object.assign(form, {
-    ...row,
-    weekdays: WEEKDAYS.filter((item) => (row.weekdayMask & item.bit) === item.bit).map((item) => item.bit),
-    slots: row.slotsJson ? JSON.parse(row.slotsJson) : [],
+    id: row.id,
+    levelId: row.levelId,
+    ruleName: row.ruleName,
+    scheduleGrid: grid,
+    effectiveStart: row.effectiveStart,
+    effectiveEnd: row.effectiveEnd,
   })
   dialogVisible.value = true
 }
 
 async function handleSubmit() {
   await formRef.value.validate()
+  if (!hasAnySelection.value) {
+    ElMessage.warning('请至少选择一个排班时段')
+    return
+  }
   const payload = {
-    ...form,
+    id: form.id,
+    ruleName: form.ruleName,
     weekdayMask: weekdayMask.value,
-    slotsJson: JSON.stringify(form.slots),
+    period: period.value,
+    effectiveStart: form.effectiveStart,
+    effectiveEnd: form.effectiveEnd,
   }
   if (dialogMode.value === 'create') {
     await scheduleRuleApi.create(payload)
@@ -179,7 +210,6 @@ async function handleDelete(row) {
 
 onMounted(() => {
   loadList()
-  loadDoctorOptions()
 })
 </script>
 
@@ -206,13 +236,15 @@ onMounted(() => {
       <el-table v-loading="loading" :data="tableData" border stripe>
         <el-table-column type="index" label="序号" width="60" align="center" :index="(index) => (query.page - 1) * query.size + index + 1" />
         <el-table-column prop="ruleName" label="排班说明" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="doctorId" label="医生ID" width="90" />
-        <el-table-column label="星期" min-width="140" show-overflow-tooltip>
-          <template #default="{ row }">{{ weekdayLabel(row.weekdayMask) }}</template>
+        <el-table-column label="排班概览" min-width="280">
+          <template #default="{ row }">
+            <div class="overview-tags">
+              <el-tag v-for="(item, idx) in row.scheduleOverview" :key="idx" size="small" class="overview-tag">{{ item }}</el-tag>
+              <span v-if="!row.scheduleOverview?.length" class="empty-tip">-</span>
+            </div>
+          </template>
         </el-table-column>
-        <el-table-column label="时段" width="90" align="center">
-          <template #default="{ row }">{{ periodLabel(row.period) }}</template>
-        </el-table-column>
+        <el-table-column prop="ruleCode" label="规则串" width="160" />
         <el-table-column prop="effectiveStart" label="生效开始" width="110" />
         <el-table-column prop="effectiveEnd" label="生效结束" width="110" />
         <el-table-column label="状态" width="100" align="center">
@@ -244,35 +276,24 @@ onMounted(() => {
       </div>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" :title="dialogMode === 'create' ? '新增排班规则' : '编辑排班规则'" width="560px">
+    <el-dialog v-model="dialogVisible" :title="dialogMode === 'create' ? '新增排班规则' : '编辑排班规则'" width="520px" align-center class="schedule-rule-dialog">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="排班说明" prop="ruleName">
           <el-input v-model="form.ruleName" placeholder="如：周一三五上午专家号" />
         </el-form-item>
-        <el-form-item label="医生" prop="doctorId">
-          <el-select v-model="form.doctorId" style="width: 100%">
-            <el-option v-for="doctor in doctorOptions" :key="doctor.id" :label="doctor.name" :value="doctor.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="星期集合">
-          <el-checkbox-group v-model="form.weekdays">
-            <el-checkbox v-for="item in WEEKDAYS" :key="item.bit" :value="item.bit">{{ item.label }}</el-checkbox>
-          </el-checkbox-group>
-        </el-form-item>
-        <el-form-item label="上午/下午">
-          <el-radio-group v-model="form.period">
-            <el-radio v-for="item in PERIODS" :key="item.value" :value="item.value">{{ item.label }}</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="时段规则">
-          <div v-for="(slot, index) in form.slots" :key="index" class="slot-row">
-            <el-time-select v-model="slot.start" placeholder="开始" start="06:00" end="22:00" step="00:15" style="width: 120px" />
-            <span class="slot-sep">至</span>
-            <el-time-select v-model="slot.end" placeholder="结束" start="06:00" end="22:00" step="00:15" style="width: 120px" />
-            <el-input-number v-model="slot.quota" :min="1" placeholder="限额" style="width: 100px" />
-            <el-button link type="danger" @click="removeSlot(index)">删除</el-button>
+        <el-form-item label="排班设置" required>
+          <div class="schedule-grid">
+            <div class="grid-header">
+              <span class="grid-day-col"></span>
+              <span class="grid-col">上午</span>
+              <span class="grid-col">下午</span>
+            </div>
+            <div v-for="d in WEEKDAYS" :key="d.key" class="grid-row">
+              <span class="grid-day-col">{{ d.label }}</span>
+              <el-checkbox v-model="form.scheduleGrid[d.key].morning" class="grid-col" />
+              <el-checkbox v-model="form.scheduleGrid[d.key].afternoon" class="grid-col" />
+            </div>
           </div>
-          <el-button link type="primary" @click="addSlot">+ 新增时段</el-button>
         </el-form-item>
         <el-form-item label="生效开始" prop="effectiveStart">
           <el-date-picker v-model="form.effectiveStart" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
@@ -282,7 +303,10 @@ onMounted(() => {
         </el-form-item>
         <el-form-item label="预览">
           <div class="preview-box">
-            <div>{{ humanPreview }}</div>
+            <div class="preview-overview">
+              <el-tag v-for="(item, idx) in overviewPreview" :key="idx" size="small">{{ item }}</el-tag>
+              <span v-if="!overviewPreview.length" class="empty-tip">未选择</span>
+            </div>
             <div class="rule-code">规则串：{{ ruleCode }}</div>
           </div>
         </el-form-item>
@@ -295,16 +319,50 @@ onMounted(() => {
   </div>
 </template>
 
-<style scoped>
-.slot-row {
+<style>
+.schedule-rule-dialog .el-dialog {
+  margin: 0 auto;
+  max-height: 90vh;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  flex-direction: column;
+}
+.schedule-rule-dialog .el-dialog__body {
+  overflow-y: auto;
+  flex: 1;
+}
+</style>
+
+<style scoped>
+.schedule-grid {
+  border: 1px solid #ebeef5;
+  border-radius: 6px;
+  padding: 8px 12px;
+  width: fit-content;
 }
 
-.slot-sep {
+.grid-header,
+.grid-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.grid-header {
   color: #909399;
+  font-size: 13px;
+}
+
+.grid-day-col {
+  width: 48px;
+  text-align: right;
+  font-weight: 500;
+  color: #303133;
+}
+
+.grid-col {
+  width: 56px;
+  justify-content: center;
 }
 
 .preview-box {
@@ -318,5 +376,26 @@ onMounted(() => {
 .rule-code {
   margin-top: 4px;
   color: #5c6f71;
+}
+
+.preview-overview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.overview-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.overview-tag {
+  margin: 0;
+}
+
+.empty-tip {
+  color: #c0c4cc;
 }
 </style>
