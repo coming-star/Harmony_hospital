@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Plus, Edit, Delete } from '@element-plus/icons-vue'
+import { Search, Plus, Edit, Delete, Refresh } from '@element-plus/icons-vue'
 import { userApi } from '../api/admin'
 
 const loading = ref(false)
@@ -48,6 +48,13 @@ function handleSearch() {
   loadList()
 }
 
+function handleReset() {
+  query.phone = ''
+  query.status = ''
+  query.page = 1
+  loadList()
+}
+
 function handleSizeChange() {
   query.page = 1
   loadList()
@@ -78,7 +85,13 @@ async function handleSubmit() {
 }
 
 async function handleToggleStatus(row) {
+  const action = row.status === 1 ? '停用' : '启用'
   const nextEnabled = row.status === 1 ? 0 : 1
+  try {
+    await ElMessageBox.confirm(`确定要${action}「${row.nickname}」吗？`, `确认${action}`, { type: 'warning' })
+  } catch {
+    return
+  }
   await userApi.toggleStatus(row.id, nextEnabled)
   ElMessage.success('操作成功')
   loadList()
@@ -109,6 +122,7 @@ onMounted(loadList)
         </el-form-item>
         <el-form-item>
           <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
+          <el-button :icon="Refresh" @click="handleReset">重置</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -121,19 +135,19 @@ onMounted(loadList)
 
       <el-table v-loading="loading" :data="tableData" border stripe>
         <el-table-column type="index" label="序号" width="60" align="center" :index="(index) => (query.page - 1) * query.size + index + 1" />
-        <el-table-column prop="phone" label="手机号" width="140" />
-        <el-table-column prop="nickname" label="昵称" width="140" />
-        <el-table-column prop="userType" label="类型" width="100">
+        <el-table-column prop="phone" label="手机号" width="130" />
+        <el-table-column prop="nickname" label="昵称" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="userType" label="类型" width="90" align="center">
           <template #default>门诊</template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="注册日期" width="180" />
-        <el-table-column prop="lastLoginAt" label="最后登录" width="180" />
+        <el-table-column prop="createdAt" label="注册日期" min-width="160" />
+        <el-table-column prop="lastLoginAt" label="最后登录" min-width="160" />
         <el-table-column label="状态" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? '启用' : '停用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220" align="center">
+        <el-table-column label="操作" width="200" align="center">
           <template #default="{ row }">
             <el-button link type="primary" :icon="Edit" @click="openEdit(row)">编辑</el-button>
             <el-button link type="warning" @click="handleToggleStatus(row)">

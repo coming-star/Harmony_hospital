@@ -146,7 +146,13 @@ async function handleSubmit() {
 }
 
 async function handleToggleStatus(row) {
+  const action = row.enabled === 1 ? '停用' : '启用'
   const nextEnabled = row.enabled === 1 ? 0 : 1
+  try {
+    await ElMessageBox.confirm(`确定要${action}「${row.ruleName}」吗？`, `确认${action}`, { type: 'warning' })
+  } catch {
+    return
+  }
   await scheduleRuleApi.toggleStatus(row.id, nextEnabled)
   ElMessage.success('操作成功')
   loadList()
@@ -175,22 +181,22 @@ onMounted(() => {
 
       <el-table v-loading="loading" :data="tableData" border stripe>
         <el-table-column type="index" label="序号" width="60" align="center" :index="(index) => (query.page - 1) * query.size + index + 1" />
-        <el-table-column prop="ruleName" label="排班说明" width="160" />
+        <el-table-column prop="ruleName" label="排班说明" min-width="180" show-overflow-tooltip />
         <el-table-column prop="doctorId" label="医生ID" width="90" />
-        <el-table-column label="星期" width="160">
+        <el-table-column label="星期" min-width="140" show-overflow-tooltip>
           <template #default="{ row }">{{ weekdayLabel(row.weekdayMask) }}</template>
         </el-table-column>
-        <el-table-column label="时段" width="90">
+        <el-table-column label="时段" width="90" align="center">
           <template #default="{ row }">{{ periodLabel(row.period) }}</template>
         </el-table-column>
-        <el-table-column prop="effectiveStart" label="生效开始" width="120" />
-        <el-table-column prop="effectiveEnd" label="生效结束" width="120" />
+        <el-table-column prop="effectiveStart" label="生效开始" width="110" />
+        <el-table-column prop="effectiveEnd" label="生效结束" width="110" />
         <el-table-column label="状态" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="row.enabled === 1 ? 'success' : 'info'">{{ row.enabled === 1 ? '已启用' : '已停用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220" align="center">
+        <el-table-column label="操作" width="200" align="center">
           <template #default="{ row }">
             <el-button link type="primary" :icon="Edit" @click="openEdit(row)">编辑</el-button>
             <el-button link type="warning" @click="handleToggleStatus(row)">

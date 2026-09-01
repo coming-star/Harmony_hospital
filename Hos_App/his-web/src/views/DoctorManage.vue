@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Plus, Edit, Delete } from '@element-plus/icons-vue'
+import { Search, Plus, Edit, Delete, Refresh } from '@element-plus/icons-vue'
 import { doctorApi, levelApi } from '../api/admin'
 import request from '../api/request'
 
@@ -69,6 +69,13 @@ function handleSearch() {
   loadList()
 }
 
+function handleReset() {
+  query.name = ''
+  query.departmentId = ''
+  query.page = 1
+  loadList()
+}
+
 function handleSizeChange() {
   query.page = 1
   loadList()
@@ -99,7 +106,13 @@ async function handleSubmit() {
 }
 
 async function handleToggleStatus(row) {
+  const action = row.enabled === 1 ? '停用' : '启用'
   const nextEnabled = row.enabled === 1 ? 0 : 1
+  try {
+    await ElMessageBox.confirm(`确定要${action}「${row.name}」吗？`, `确认${action}`, { type: 'warning' })
+  } catch {
+    return
+  }
   await doctorApi.toggleStatus(row.id, nextEnabled)
   ElMessage.success('操作成功')
   loadList()
@@ -133,6 +146,7 @@ onMounted(() => {
         </el-form-item>
         <el-form-item>
           <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
+          <el-button :icon="Refresh" @click="handleReset">重置</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -150,16 +164,16 @@ onMounted(() => {
             <el-avatar :size="36" :src="row.avatarUrl" />
           </template>
         </el-table-column>
-        <el-table-column prop="name" label="姓名" width="120" />
-        <el-table-column prop="title" label="职称" width="140" />
+        <el-table-column prop="name" label="姓名" width="110" />
+        <el-table-column prop="title" label="职称" width="130" />
         <el-table-column prop="departmentId" label="科室ID" width="100" />
-        <el-table-column prop="introduction" label="简介" show-overflow-tooltip />
+        <el-table-column prop="introduction" label="简介" min-width="160" show-overflow-tooltip class-name="cell-left" />
         <el-table-column label="状态" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="row.enabled === 1 ? 'success' : 'info'">{{ row.enabled === 1 ? '已启用' : '已停用' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220" align="center">
+        <el-table-column label="操作" width="200" align="center">
           <template #default="{ row }">
             <el-button link type="primary" :icon="Edit" @click="openEdit(row)">编辑</el-button>
             <el-button link type="warning" @click="handleToggleStatus(row)">
