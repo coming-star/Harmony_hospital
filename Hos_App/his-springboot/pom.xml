@@ -113,7 +113,6 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <mainClass>com.neusoft.hisspringboot.HisSpringbootApplication</mainClass>
-                    <skip>true</skip>
                 </configuration>
                 <executions>
                     <execution>
