@@ -214,31 +214,17 @@ public class OrderService {
                 .orderByDesc(RegistrationOrder::getCreatedAt);
 
         if (patientKeyword != null && !patientKeyword.isBlank()) {
-            List<Long> userIds = sysUserMapper.selectList(
-                    new LambdaQueryWrapper<SysUser>()
-                            .like(SysUser::getPhone, patientKeyword)
-                            .or().like(SysUser::getNickname, patientKeyword)
-            ).stream().map(SysUser::getId).toList();
-
             List<Long> contactIds = patientContactMapper.selectList(
-                    new LambdaQueryWrapper<PatientContact>().like(PatientContact::getName, patientKeyword)
+                    new LambdaQueryWrapper<PatientContact>()
+                            .like(PatientContact::getName, patientKeyword)
+                            .or().like(PatientContact::getPhone, patientKeyword)
             ).stream().map(PatientContact::getId).toList();
 
-            if (userIds.isEmpty() && contactIds.isEmpty()) {
+            if (contactIds.isEmpty()) {
                 return PageResult.of(List.of(), 0, page, size);
             }
 
-            wrapper.and(inner -> {
-                if (!userIds.isEmpty()) {
-                    inner.in(RegistrationOrder::getUserId, userIds);
-                }
-                if (!contactIds.isEmpty()) {
-                    if (!userIds.isEmpty()) {
-                        inner.or();
-                    }
-                    inner.in(RegistrationOrder::getContactId, contactIds);
-                }
-            });
+            wrapper.in(RegistrationOrder::getContactId, contactIds);
         }
 
         Page<RegistrationOrder> mpPage = orderMapper.selectPage(new Page<>(page, size), wrapper);
@@ -380,9 +366,13 @@ public class OrderService {
 
     private OrderDetail toDetail(RegistrationOrder order) {
         String contactName = null;
+        String contactPhone = null;
         if (order.getContactId() != null) {
             PatientContact contact = patientContactMapper.selectById(order.getContactId());
-            contactName = contact == null ? null : contact.getName();
+            if (contact != null) {
+                contactName = contact.getName();
+                contactPhone = contact.getPhone();
+            }
         }
         return new OrderDetail(
                 order.getId(),
@@ -404,7 +394,8 @@ public class OrderService {
                 order.getCancelledAt(),
                 order.getCancelReason(),
                 order.getCreatedAt(),
-                contactName
+                contactName,
+                contactPhone
         );
     }
 

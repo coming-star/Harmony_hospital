@@ -93,8 +93,8 @@ onMounted(loadList)
           <el-form-item label="订单号">
             <el-input v-model="query.orderNo" placeholder="订单号" clearable style="width: 200px" @keyup.enter="handleSearch" />
           </el-form-item>
-          <el-form-item label="患者/就诊人">
-            <el-input v-model="query.patientKeyword" placeholder="手机号或姓名" clearable style="width: 200px" @keyup.enter="handleSearch" />
+          <el-form-item label="就诊人">
+            <el-input v-model="query.patientKeyword" placeholder="姓名或手机号" clearable style="width: 200px" @keyup.enter="handleSearch" />
           </el-form-item>
         </div>
         <div class="filter-row">
@@ -125,6 +125,8 @@ onMounted(loadList)
       <el-table v-loading="loading" :data="tableData" border stripe>
         <el-table-column type="index" label="序号" width="60" align="center" :index="(index) => (query.page - 1) * query.size + index + 1" />
         <el-table-column prop="orderNo" label="订单号" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="contactName" label="就诊人" width="90" />
+        <el-table-column prop="contactPhone" label="联系方式" width="120" />
         <el-table-column prop="doctorName" label="医生" width="100" />
         <el-table-column prop="departmentName" label="科室" min-width="110" show-overflow-tooltip />
         <el-table-column prop="levelName" label="号别" width="90" />
@@ -172,6 +174,8 @@ onMounted(loadList)
       <el-descriptions :column="1" border v-if="detailRow">
         <el-descriptions-item label="订单号">{{ detailRow.orderNo }}</el-descriptions-item>
         <el-descriptions-item label="状态">{{ statusLabel(detailRow.status) }}</el-descriptions-item>
+        <el-descriptions-item label="就诊人">{{ detailRow.contactName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="联系方式">{{ detailRow.contactPhone || '-' }}</el-descriptions-item>
         <el-descriptions-item label="医生">{{ detailRow.doctorName }}</el-descriptions-item>
         <el-descriptions-item label="科室">{{ detailRow.departmentName }}</el-descriptions-item>
         <el-descriptions-item label="号别">{{ detailRow.levelName }}</el-descriptions-item>

@@ -24,6 +24,7 @@ public record OrderDetail(
         LocalDateTime cancelledAt,
         String cancelReason,
         LocalDateTime createdAt,
-        String contactName
+        String contactName,
+        String contactPhone
 ) {
 }
