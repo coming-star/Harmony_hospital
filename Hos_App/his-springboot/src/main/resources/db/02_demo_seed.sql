@@ -116,12 +116,6 @@ CROSS JOIN (
 ) AS t
 WHERE ((t.mask >> WEEKDAY(DATE_ADD(CURDATE(), INTERVAL d.offset_day DAY))) & 1) = 1;
 
-INSERT IGNORE INTO sys_banner (id, title, image_url, link_url, sort_no, enabled)
-VALUES
-  (8001, '秋季健康守护', 'https://placehold.co/1080x420/1E88E5/FFFFFF?text=Neusoft+Cloud+Hospital', NULL, 10, 1),
-  (8002, '预约挂号服务指南', 'https://placehold.co/1080x420/26A69A/FFFFFF?text=Appointment+Guide', NULL, 20, 1),
-  (8003, '慢病随访温馨提示', 'https://placehold.co/1080x420/5C6BC0/FFFFFF?text=Health+Care', NULL, 30, 1);
-
 -- 导入后快速确认数据量（无需修改数据）：
 SELECT 'department' AS entity, COUNT(*) AS total FROM department WHERE deleted = 0
 UNION ALL SELECT 'doctor', COUNT(*) FROM doctor WHERE deleted = 0

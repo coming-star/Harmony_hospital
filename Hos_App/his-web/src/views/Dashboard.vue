@@ -210,7 +210,10 @@ function handleResize() {
 
 onMounted(() => {
   loadStat(userApi.list, (total) => (stats.userCount = total))
-  loadStat(departmentApi.list, (total) => (stats.departmentCount = total))
+  loadStat(
+    (params) => departmentApi.list({ ...params, excludeRoot: true }),
+    (total) => (stats.departmentCount = total)
+  )
   loadStat(doctorApi.list, (total) => (stats.doctorCount = total))
   loadStat(
     (params) => orderApi.list({ ...params, visitDate: new Date().toISOString().slice(0, 10) }),

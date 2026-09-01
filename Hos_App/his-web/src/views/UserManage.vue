@@ -115,7 +115,7 @@ onMounted(loadList)
           <el-input v-model="query.phone" placeholder="手机号" clearable @keyup.enter="handleSearch" />
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
+          <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px" @change="handleSearch">
             <el-option label="启用" :value="1" />
             <el-option label="停用" :value="0" />
           </el-select>
@@ -137,9 +137,6 @@ onMounted(loadList)
         <el-table-column type="index" label="序号" width="60" align="center" :index="(index) => (query.page - 1) * query.size + index + 1" />
         <el-table-column prop="phone" label="手机号" width="130" />
         <el-table-column prop="nickname" label="昵称" min-width="120" show-overflow-tooltip />
-        <el-table-column prop="userType" label="类型" width="90" align="center">
-          <template #default>门诊</template>
-        </el-table-column>
         <el-table-column prop="createdAt" label="注册日期" min-width="160" />
         <el-table-column prop="lastLoginAt" label="最后登录" min-width="160" />
         <el-table-column label="状态" width="100" align="center">

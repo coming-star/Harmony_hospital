@@ -133,9 +133,10 @@
 
 ### 3.6 AI 管家（P1，本期契约冻结但不阻塞主线）
 
+> AI 接入密钥（URL/API Key/模型）统一由后端部署配置管理，不提供患者个人配置入口，因此没有 `/api/me/ai-settings` 这类接口。
+
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| GET/PUT | `/api/me/ai-settings` | AI 配置（API Key 仅返回掩码） |
 | POST | `/api/ai/chat` | 发送消息（未登录 401） |
 | GET | `/api/ai/conversations` | 会话历史 |
 

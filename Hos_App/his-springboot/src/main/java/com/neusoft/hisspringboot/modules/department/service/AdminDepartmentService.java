@@ -21,12 +21,13 @@ public class AdminDepartmentService {
     private final DepartmentMapper departmentMapper;
     private final DoctorMapper doctorMapper;
 
-    public PageResult<Department> list(String name, String departmentType, int page, int size) {
+    public PageResult<Department> list(String name, String departmentType, Boolean excludeRoot, int page, int size) {
         Page<Department> mpPage = departmentMapper.selectPage(
                 new Page<>(page, size),
                 new LambdaQueryWrapper<Department>()
                         .like(name != null && !name.isBlank(), Department::getName, name)
                         .eq(departmentType != null && !departmentType.isBlank(), Department::getDepartmentType, departmentType)
+                        .ne(Boolean.TRUE.equals(excludeRoot), Department::getParentId, 0)
                         .orderByAsc(Department::getSortNo)
         );
 
