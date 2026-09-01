@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "后台-挂号级别", description = "WEB-07 挂号级别管理")
+@Tag(name = "挂号级别管理", description = "后台挂号级别新增、编辑、停用、删除")
 @RestController
 @RequestMapping("/api/admin/levels")
 @RequiredArgsConstructor

@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "后台-科室管理", description = "WEB-04 科室管理")
+@Tag(name = "科室管理", description = "科室树查询与后台科室新增、编辑、停用、删除")
 @RestController
 @RequestMapping("/api/admin/departments")
 @RequiredArgsConstructor

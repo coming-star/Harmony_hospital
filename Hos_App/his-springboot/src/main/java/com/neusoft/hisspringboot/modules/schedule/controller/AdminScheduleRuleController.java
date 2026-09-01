@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "后台-排班管理", description = "WEB-06 排班规则管理")
+@Tag(name = "排班与号源管理", description = "号源查询与后台排班规则新增、编辑、停用、删除")
 @RestController
 @RequestMapping("/api/admin/schedule-rules")
 @RequiredArgsConstructor

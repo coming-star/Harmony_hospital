@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 
-@Tag(name = "后台-挂号记录", description = "WEB-08 挂号记录查询与管理员取消")
+@Tag(name = "挂号记录管理", description = "预约下单、支付、取消、查询与后台挂号记录查询、管理员取消")
 @RestController
 @RequestMapping("/api/admin/orders")
 @RequiredArgsConstructor

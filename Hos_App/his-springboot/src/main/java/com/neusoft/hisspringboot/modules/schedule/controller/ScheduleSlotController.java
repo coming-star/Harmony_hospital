@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.util.List;
 
-@Tag(name = "号源", description = "按科室、日期、号别查询可预约时段")
+@Tag(name = "排班与号源管理", description = "号源查询与后台排班规则新增、编辑、停用、删除")
 @RestController
 @RequiredArgsConstructor
 public class ScheduleSlotController {

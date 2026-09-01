@@ -15,7 +15,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-@Tag(name = "管理员认证", description = "系统管理员后台登录接口")
+@Tag(name = "登录注册与认证鉴权", description = "患者/管理员注册登录登出、当前用户信息、角色权限验证")
 @RestController
 @RequestMapping("/api/admin/auth")
 @RequiredArgsConstructor
