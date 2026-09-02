@@ -12,17 +12,32 @@ import com.neusoft.hisspringboot.modules.level.mapper.RegistrationLevelMapper;
 import com.neusoft.hisspringboot.modules.schedule.entity.ScheduleRule;
 import com.neusoft.hisspringboot.modules.schedule.mapper.ScheduleRuleMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AdminLevelService {
+
+    private static final String CACHE_SLOT_QUERY = "slotQuery";
 
     private final RegistrationLevelMapper registrationLevelMapper;
     private final DoctorRegistrationLevelMapper doctorRegistrationLevelMapper;
     private final ScheduleRuleMapper scheduleRuleMapper;
+    private final CacheManager cacheManager;
+
+    private void evictSlotCache() {
+        Cache cache = cacheManager.getCache(CACHE_SLOT_QUERY);
+        if (cache != null) {
+            cache.clear();
+            log.info("已清除号源查询缓存: {}", CACHE_SLOT_QUERY);
+        }
+    }
 
     public PageResult<RegistrationLevel> list(int page, int size) {
         Page<RegistrationLevel> mpPage = registrationLevelMapper.selectPage(
@@ -38,6 +53,7 @@ public class AdminLevelService {
         level.setId(null);
         level.setEnabled(level.getEnabled() == null ? 1 : level.getEnabled());
         registrationLevelMapper.insert(level);
+        evictSlotCache();
         return level.getId();
     }
 
@@ -46,12 +62,14 @@ public class AdminLevelService {
         ensureCodeAvailable(level.getCode(), id);
         level.setId(id);
         registrationLevelMapper.updateById(level);
+        evictSlotCache();
     }
 
     public void toggleStatus(Long id, Integer enabled) {
         RegistrationLevel level = getOrThrow(id);
         level.setEnabled(enabled);
         registrationLevelMapper.updateById(level);
+        evictSlotCache();
     }
 
     public void delete(Long id) {
@@ -69,6 +87,7 @@ public class AdminLevelService {
         }
 
         registrationLevelMapper.deleteById(id);
+        evictSlotCache();
     }
 
     private void ensureCodeAvailable(String code, Long excludeId) {

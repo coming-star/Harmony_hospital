@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.neusoft.hisspringboot.common.BusinessException;
 import com.neusoft.hisspringboot.common.ErrorCode;
 import com.neusoft.hisspringboot.common.PageResult;
+import com.neusoft.hisspringboot.common.RedisCacheUtil;
 import com.neusoft.hisspringboot.modules.department.entity.Department;
 import com.neusoft.hisspringboot.modules.department.mapper.DepartmentMapper;
 import com.neusoft.hisspringboot.modules.doctor.dto.AdminDoctorRequest;
@@ -37,6 +38,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AdminDoctorService {
 
+    /** 号源查询缓存前缀：与 ScheduleSlotService / OrderService 保持一致 */
+    private static final String SLOT_QUERY_CACHE_PREFIX = "his:cache:slotQuery:";
+
     private final DoctorMapper doctorMapper;
     private final DepartmentMapper departmentMapper;
     private final DoctorRegistrationLevelMapper doctorRegistrationLevelMapper;
@@ -44,6 +48,12 @@ public class AdminDoctorService {
     private final ScheduleRuleMapper scheduleRuleMapper;
     private final ScheduleSlotMapper scheduleSlotMapper;
     private final RegistrationLevelMapper registrationLevelMapper;
+    private final RedisCacheUtil redisCacheUtil;
+
+    /** 医生变动（增/改/停用/删）后，清空全部号源查询缓存，避免患者端看到过期的医生排班数据 */
+    private void evictSlotCache() {
+        redisCacheUtil.deleteByPrefix(SLOT_QUERY_CACHE_PREFIX);
+    }
 
     public PageResult<AdminDoctorResponse> list(String name, Long departmentId, int page, int size) {
         List<Long> effectiveDeptIds = null;
@@ -151,6 +161,7 @@ public class AdminDoctorService {
 
         replaceLevels(doctor.getId(), request.levelIds());
         replaceScheduleRules(doctor.getId(), request.scheduleRuleIds());
+        evictSlotCache();
 
         return doctor.getId();
     }
@@ -166,12 +177,14 @@ public class AdminDoctorService {
 
         replaceLevels(id, request.levelIds());
         replaceScheduleRules(id, request.scheduleRuleIds());
+        evictSlotCache();
     }
 
     public void toggleStatus(Long id, Integer enabled) {
         Doctor doctor = getOrThrow(id);
         doctor.setEnabled(enabled);
         doctorMapper.updateById(doctor);
+        evictSlotCache();
     }
 
     public void delete(Long id) {
@@ -190,6 +203,7 @@ public class AdminDoctorService {
         );
 
         doctorMapper.deleteById(id);
+        evictSlotCache();
     }
 
     private void replaceLevels(Long doctorId, List<Long> levelIds) {

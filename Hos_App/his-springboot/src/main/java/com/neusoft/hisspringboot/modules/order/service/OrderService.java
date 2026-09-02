@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.neusoft.hisspringboot.common.BusinessException;
 import com.neusoft.hisspringboot.common.ErrorCode;
 import com.neusoft.hisspringboot.common.PageResult;
+import com.neusoft.hisspringboot.common.RedisCacheUtil;
 import com.neusoft.hisspringboot.modules.contact.entity.PatientContact;
 import com.neusoft.hisspringboot.modules.contact.mapper.PatientContactMapper;
 import com.neusoft.hisspringboot.modules.department.entity.Department;
@@ -27,6 +28,7 @@ import com.neusoft.hisspringboot.modules.schedule.mapper.ScheduleSlotMapper;
 import com.neusoft.hisspringboot.modules.user.entity.SysUser;
 import com.neusoft.hisspringboot.modules.user.mapper.SysUserMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -48,6 +51,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderService {
 
     private static final String STATUS_OPEN = "OPEN";
@@ -61,6 +65,17 @@ public class OrderService {
 
     private static final int TIMEOUT_MINUTES = 15;
 
+    /** 防重复挂号锁：30秒过期，避免死锁 */
+    private static final String REG_LOCK_PREFIX = "reg:lock:";
+    private static final int REG_LOCK_EXPIRE_SECONDS = 30;
+
+    /** 限流：每分钟每个用户最多 5 次挂号请求 */
+    private static final String REG_LIMIT_PREFIX = "reg:limit:";
+    private static final int REG_LIMIT_MAX_PER_MINUTE = 5;
+    private static final int REG_LIMIT_EXPIRE_SECONDS = 60;
+
+    private static final String SLOT_QUERY_CACHE_PREFIX = "his:cache:slotQuery:";
+
     private final RegistrationOrderMapper orderMapper;
     private final PaymentRecordMapper paymentRecordMapper;
     private final ScheduleSlotMapper scheduleSlotMapper;
@@ -69,9 +84,59 @@ public class OrderService {
     private final DepartmentMapper departmentMapper;
     private final RegistrationLevelMapper registrationLevelMapper;
     private final SysUserMapper sysUserMapper;
+    private final RedisCacheUtil redisCacheUtil;
 
     @Transactional
     public OrderDetail createOrder(Long userId, CreateOrderRequest request) {
+        // ============ 限流：每分钟每个用户最多 5 次挂号请求 ============
+        String minuteKey = LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"));
+        String limitKey = REG_LIMIT_PREFIX + userId + ":" + minuteKey;
+        long count = redisCacheUtil.increment(limitKey, REG_LIMIT_EXPIRE_SECONDS);
+        if (count > REG_LIMIT_MAX_PER_MINUTE) {
+            throw new BusinessException(ErrorCode.BUSINESS_RULE_VIOLATION,
+                    "操作过于频繁，请 1 分钟后再试（每分钟最多 " + REG_LIMIT_MAX_PER_MINUTE + " 次）");
+        }
+
+        ScheduleSlot slotForLock = scheduleSlotMapper.selectById(request.slotId());
+        if (slotForLock == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "预约时段不存在");
+        }
+
+        // ============ Redis 分布式锁防重复挂号：同一就诊人 + 同一医生 + 同一日期 + 同一时段 ============
+        String lockValue = UUID.randomUUID().toString();
+        String lockKey = REG_LOCK_PREFIX
+                + request.contactId() + ":"
+                + slotForLock.getDoctorId() + ":"
+                + slotForLock.getVisitDate() + ":"
+                + slotForLock.getStartTime() + "-" + slotForLock.getEndTime();
+
+        boolean locked = redisCacheUtil.setIfAbsent(lockKey, lockValue, REG_LOCK_EXPIRE_SECONDS);
+        if (!locked) {
+            throw new BusinessException(ErrorCode.BUSINESS_RULE_VIOLATION,
+                    "请勿重复挂号（同一会诊人同一时段只能挂一个号）");
+        }
+
+        try {
+            return doCreateOrder(userId, request);
+        } finally {
+            // 锁释放：value 匹配才删，避免误删别人的（保险起见）
+            String current = redisCacheUtil.get(lockKey);
+            if (lockValue.equals(current)) {
+                redisCacheUtil.delete(lockKey);
+            }
+
+            // 号源查询缓存清掉（扣完库存必须回源）。
+            // 用前缀模糊删：同一个科室 + 同一个就诊日期下，不管是 "_all" 还是带具体 levelId 的缓存，
+            // 一股脑全部清掉，避免"选了号别过滤的视角看到剩余号数没更新"的脏读。
+            String slotCachePrefix = SLOT_QUERY_CACHE_PREFIX
+                    + slotForLock.getDepartmentId() + "_"
+                    + slotForLock.getVisitDate() + "_";
+            redisCacheUtil.deleteByPrefix(slotCachePrefix);
+        }
+    }
+
+    private OrderDetail doCreateOrder(Long userId, CreateOrderRequest request) {
         RegistrationOrder existing = orderMapper.selectOne(
                 new LambdaQueryWrapper<RegistrationOrder>()
                         .eq(RegistrationOrder::getUserId, userId)

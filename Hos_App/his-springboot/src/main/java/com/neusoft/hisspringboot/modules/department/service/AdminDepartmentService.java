@@ -5,26 +5,42 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.neusoft.hisspringboot.common.BusinessException;
 import com.neusoft.hisspringboot.common.ErrorCode;
 import com.neusoft.hisspringboot.common.PageResult;
+import com.neusoft.hisspringboot.common.RedisCacheUtil;
 import com.neusoft.hisspringboot.modules.department.entity.Department;
 import com.neusoft.hisspringboot.modules.department.mapper.DepartmentMapper;
 import com.neusoft.hisspringboot.modules.doctor.mapper.DoctorMapper;
 import com.neusoft.hisspringboot.modules.doctor.entity.Doctor;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AdminDepartmentService {
+
+    private static final String DEPT_TREE_CACHE_KEY = "his:cache:deptTree:all";
+    private static final String SLOT_QUERY_CACHE_PREFIX = "his:cache:slotQuery:";
 
     private final DepartmentMapper departmentMapper;
     private final DoctorMapper doctorMapper;
+    private final RedisCacheUtil redisCacheUtil;
+
+    private void evictDeptTreeCache() {
+        redisCacheUtil.delete(DEPT_TREE_CACHE_KEY);
+        log.info("已清除科室树缓存: {}", DEPT_TREE_CACHE_KEY);
+    }
+
+    /** 科室结构/状态变化后，号源缓存也需要清（比如停用了心血管内科，该科室的号就不能约了） */
+    private void evictSlotCache() {
+        redisCacheUtil.deleteByPrefix(SLOT_QUERY_CACHE_PREFIX);
+    }
 
     public PageResult<Department> list(String name, String departmentType, Long parentId, Boolean excludeRoot, int page, int size) {
         boolean effectiveExcludeRoot = !Boolean.FALSE.equals(excludeRoot);
@@ -71,6 +87,8 @@ public class AdminDepartmentService {
         department.setId(null);
         department.setEnabled(department.getEnabled() == null ? 1 : department.getEnabled());
         departmentMapper.insert(department);
+        evictDeptTreeCache();
+        evictSlotCache();
         return department.getId();
     }
 
@@ -83,12 +101,16 @@ public class AdminDepartmentService {
         ensureCodeAvailable(department.getCode(), id);
         department.setId(id);
         departmentMapper.updateById(department);
+        evictDeptTreeCache();
+        evictSlotCache();
     }
 
     public void toggleStatus(Long id, Integer enabled) {
         Department department = getOrThrow(id);
         department.setEnabled(enabled);
         departmentMapper.updateById(department);
+        evictDeptTreeCache();
+        evictSlotCache();
     }
 
     public void delete(Long id) {
@@ -103,6 +125,8 @@ public class AdminDepartmentService {
         }
 
         departmentMapper.deleteById(id);
+        evictDeptTreeCache();
+        evictSlotCache();
     }
 
     private void ensureCodeAvailable(String code, Long excludeId) {

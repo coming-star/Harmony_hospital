@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.neusoft.hisspringboot.common.BusinessException;
 import com.neusoft.hisspringboot.common.ErrorCode;
 import com.neusoft.hisspringboot.common.PageResult;
+import com.neusoft.hisspringboot.common.RedisCacheUtil;
 import com.neusoft.hisspringboot.modules.schedule.entity.ScheduleRule;
 import com.neusoft.hisspringboot.modules.schedule.entity.ScheduleSlot;
 import com.neusoft.hisspringboot.modules.schedule.mapper.ScheduleRuleMapper;
@@ -24,9 +25,12 @@ public class AdminScheduleRuleService {
     private static final String[] WEEKDAY_LABELS = {"周一", "周二", "周三", "周四", "周五", "周六", "周日"};
     private static final String PERIOD_MORNING = "MORNING";
     private static final String PERIOD_AFTERNOON = "AFTERNOON";
+    /** 号源查询缓存前缀：与 ScheduleSlotService / OrderService 保持一致 */
+    private static final String SLOT_QUERY_CACHE_PREFIX = "his:cache:slotQuery:";
 
     private final ScheduleRuleMapper scheduleRuleMapper;
     private final ScheduleSlotMapper scheduleSlotMapper;
+    private final RedisCacheUtil redisCacheUtil;
 
     public PageResult<ScheduleRule> list(String ruleName, int page, int size) {
         Page<ScheduleRule> mpPage = scheduleRuleMapper.selectPage(
@@ -44,6 +48,7 @@ public class AdminScheduleRuleService {
         rule.setId(null);
         rule.setEnabled(rule.getEnabled() == null ? 1 : rule.getEnabled());
         scheduleRuleMapper.insert(rule);
+        evictSlotCache();
         return rule.getId();
     }
 
@@ -51,12 +56,14 @@ public class AdminScheduleRuleService {
         getOrThrow(id);
         rule.setId(id);
         scheduleRuleMapper.updateById(rule);
+        evictSlotCache();
     }
 
     public void toggleStatus(Long id, Integer enabled) {
         ScheduleRule rule = getOrThrow(id);
         rule.setEnabled(enabled);
         scheduleRuleMapper.updateById(rule);
+        evictSlotCache();
     }
 
     public void delete(Long id) {
@@ -71,6 +78,12 @@ public class AdminScheduleRuleService {
         }
 
         scheduleRuleMapper.deleteById(id);
+        evictSlotCache();
+    }
+
+    /** 写操作完成后：清空全部号源查询缓存，下次患者端查询自然回源 */
+    private void evictSlotCache() {
+        redisCacheUtil.deleteByPrefix(SLOT_QUERY_CACHE_PREFIX);
     }
 
     private ScheduleRule getOrThrow(Long id) {

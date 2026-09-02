@@ -29,26 +29,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        // ============【新增：静态资源、登录接口、文档放行】============
-        String uri = request.getRequestURI();
-        if (uri.startsWith("/index.html")
-                || uri.startsWith("/js/")
-                || uri.startsWith("/css/")
-                || uri.startsWith("/img/")
-                || uri.startsWith("/favicon.ico")
-                || uri.startsWith("/doc.html")
-                || uri.startsWith("/webjars/")
-                || uri.startsWith("/v3/api-docs")
-                || uri.startsWith("/swagger-resources")
-                || uri.startsWith("/api/admin/auth/login")
-                || uri.startsWith("/api/app/auth/login")
-                || uri.startsWith("/api/app/auth/register")
-                || uri.startsWith("/error")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-        // ==========================================================
-
+        // 放行逻辑由 SecurityConfig.requestMatchers(...).permitAll() 统一配置，
+        // 这里只负责：有 Authorization 头就解析 token，没有就交给 Spring Security 后面的 filter 链处理。
         String authorization = request.getHeader("Authorization");
 
         if (authorization == null || !authorization.startsWith("Bearer ")) {

@@ -9,6 +9,8 @@ import com.neusoft.hisspringboot.modules.schedule.dto.SlotSummary;
 import com.neusoft.hisspringboot.modules.schedule.entity.ScheduleSlot;
 import com.neusoft.hisspringboot.modules.schedule.mapper.ScheduleSlotMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -19,6 +21,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ScheduleSlotService {
 
     private static final String STATUS_OPEN = "OPEN";
@@ -27,7 +30,11 @@ public class ScheduleSlotService {
     private final DoctorMapper doctorMapper;
     private final RegistrationLevelMapper registrationLevelMapper;
 
+    @Cacheable(value = "slotQuery",
+            key = "#departmentId + '_' + #date + '_' + (#levelId != null ? #levelId : 'all')",
+            unless = "#result == null || #result.isEmpty()")
     public List<SlotSummary> query(Long departmentId, LocalDate date, Long levelId) {
+        log.info("查询号源（未命中缓存）: dept={}, date={}, level={}", departmentId, date, levelId);
         List<ScheduleSlot> slots = scheduleSlotMapper.selectList(
                 new LambdaQueryWrapper<ScheduleSlot>()
                         .eq(ScheduleSlot::getDepartmentId, departmentId)

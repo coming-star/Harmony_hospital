@@ -4,6 +4,7 @@ import com.neusoft.hisspringboot.common.ApiResponse;
 import com.neusoft.hisspringboot.modules.doctor.dto.DoctorDetailResponse;
 import com.neusoft.hisspringboot.modules.doctor.service.DoctorService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 患者端医生接口：查询医生详情（科室、职称、简介、可挂号级别）。
+ */
 @Tag(name = "医生管理", description = "医生详情查询与后台医生新增、编辑、停用、删除")
 @RestController
 @RequiredArgsConstructor
@@ -19,13 +23,18 @@ public class DoctorController {
 
     private final DoctorService doctorService;
 
+    /**
+     * 查询医生详情：号源列表点进医生时调用。
+     */
     @Operation(
             summary = "查询医生详情",
-            description = "返回医生基础信息、所属科室名称及可提供的挂号级别",
+            description = "返回医生基础信息、所属科室名称及可提供的挂号级别（含费用）",
             security = {@SecurityRequirement(name = HttpHeaders.AUTHORIZATION)}
     )
     @GetMapping("/api/doctors/{id}")
-    public ApiResponse<DoctorDetailResponse> detail(@PathVariable Long id) {
+    public ApiResponse<DoctorDetailResponse> detail(
+            @Parameter(description = "医生ID", required = true, example = "4001") @PathVariable Long id
+    ) {
         return ApiResponse.success(doctorService.getDetail(id));
     }
 }

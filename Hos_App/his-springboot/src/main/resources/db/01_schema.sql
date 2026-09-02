@@ -47,8 +47,8 @@ CREATE TABLE patient_contact (
   id BIGINT UNSIGNED NOT NULL COMMENT '雪花主键',
   user_id BIGINT UNSIGNED NOT NULL COMMENT '这个就诊人挂在哪个登录账号下面',
   name VARCHAR(50) NOT NULL,
-  id_card_cipher VARBINARY(512) NOT NULL COMMENT '身份证号密文，用 AES-GCM 加密，绝不存明文',
-  id_card_hash CHAR(64) NOT NULL COMMENT '身份证号做 SHA-256 哈希后的值，专门用来判断"是不是已经绑过这个身份证"，因为密文每次加密结果不同没法直接比对',
+  id_card_cipher VARBINARY(512) DEFAULT NULL COMMENT '身份证号密文，用 AES-GCM 加密，绝不存明文；本期演示暂不收集身份证，允许为空',
+  id_card_hash CHAR(64) DEFAULT NULL COMMENT '身份证号做 SHA-256 哈希后的值，专门用来判断"是不是已经绑过这个身份证"，因为密文每次加密结果不同没法直接比对；本期允许为空',
   phone VARCHAR(20) NOT NULL,
   relation VARCHAR(20) NOT NULL DEFAULT 'SELF' COMMENT '和账号本人的关系：SELF本人/PARENT父母/CHILD子女/SPOUSE配偶/OTHER其他',
   deleted TINYINT NOT NULL DEFAULT 0,
@@ -104,7 +104,6 @@ CREATE TABLE doctor (
   name VARCHAR(50) NOT NULL,
   department_id BIGINT UNSIGNED NOT NULL COMMENT '所属科室',
   title VARCHAR(50) DEFAULT NULL COMMENT '职称，如"主任医师"',
-  avatar_url VARCHAR(500) DEFAULT NULL,
   introduction TEXT DEFAULT NULL COMMENT '医生简介，患者端预约页会展示',
   enabled TINYINT NOT NULL DEFAULT 1,
   deleted TINYINT NOT NULL DEFAULT 0,
@@ -132,15 +131,15 @@ CREATE TABLE doctor_registration_level (
 -- 三、排班与号源：先有"规则"，再由规则生成"实际可约的时段"
 -- ============================================================
 
--- 排班规则是"周期性的安排"，比如"陈医生每周一三五上午出专家号"，它本身不能直接被预约。
--- 系统会用这条规则，按天展开生成 schedule_slot（实际号源），患者预约的是号源，不是规则。
+-- 排班规则是"周期性的模板"，比如"周一三五上午"，本身是纯规则，不绑定特定医生。
+-- 多个医生可以复用同一条规则（通过 doctor_schedule_rule 中间表关联）。
+-- 系统会用"医生+规则"的组合，按天展开生成 schedule_slot（实际号源），患者预约的是号源，不是规则。
 CREATE TABLE schedule_rule (
   id BIGINT UNSIGNED NOT NULL COMMENT '雪花主键',
-  doctor_id BIGINT UNSIGNED NOT NULL,
-  level_id BIGINT UNSIGNED NOT NULL,
-  rule_name VARCHAR(100) NOT NULL COMMENT '排班说明文字，如"周一三五上午专家号"',
+  level_id BIGINT UNSIGNED NOT NULL COMMENT '该规则对应的号别，如普通号/专家号',
+  rule_name VARCHAR(100) NOT NULL COMMENT '排班说明文字，如"周一三五上午"',
   weekday_mask TINYINT UNSIGNED NOT NULL COMMENT '用二进制位表示星期几生效：从低位到高位第0-6位依次对应周一到周日，命中的位=1。例如周一三五生效，二进制是0010101，换算成十进制就是21',
-  period VARCHAR(16) NOT NULL COMMENT '时段：MORNING上午/AFTERNOON下午/EVENING晚上',
+  period VARCHAR(16) NOT NULL COMMENT '时段：MORNING上午/AFTERNOON下午/EVENING晚上/FULL全天',
   slots_json JSON NOT NULL COMMENT '具体时段与限额，格式如 [{start:"08:00",end:"08:30",quota:10}]，一条规则里可以有多个时段',
   effective_start DATE NOT NULL COMMENT '规则生效开始日期',
   effective_end DATE DEFAULT NULL COMMENT '规则生效结束日期，NULL表示一直有效、没有结束时间',
@@ -149,9 +148,21 @@ CREATE TABLE schedule_rule (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  KEY idx_rule_doctor_level_enabled (doctor_id, level_id, enabled),
+  KEY idx_rule_level_enabled (level_id, enabled),
   KEY idx_rule_effective_range (effective_start, effective_end)
-) ENGINE=InnoDB COMMENT='周期性排班规则；由任务展开成实际号源';
+) ENGINE=InnoDB COMMENT='周期性排班规则模板；多个医生可复用';
+
+-- 医生 ↔ 排班规则 多对多关联表。
+-- 一条规则可以被多个医生复用；一个医生可以同时采用多条规则（例如既出周一周三上午也出周六全天）。
+CREATE TABLE doctor_schedule_rule (
+  id BIGINT UNSIGNED NOT NULL COMMENT '雪花主键',
+  doctor_id BIGINT UNSIGNED NOT NULL,
+  schedule_rule_id BIGINT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_doctor_rule (doctor_id, schedule_rule_id),
+  KEY idx_dsr_rule (schedule_rule_id)
+) ENGINE=InnoDB COMMENT='医生-排班规则关联；多对多模板复用';
 
 -- 这是患者真正能预约的"号源"，每一行代表"某医生在某天某个具体时间段，还剩几个名额"。
 -- 挂号下单时，只对这张表做"扣库存"操作（remaining_quota 减 1），不会去改 schedule_rule。

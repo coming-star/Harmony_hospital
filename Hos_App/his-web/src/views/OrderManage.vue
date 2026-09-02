@@ -96,6 +96,10 @@ onMounted(loadList)
           <el-form-item label="就诊人">
             <el-input v-model="query.patientKeyword" placeholder="姓名或手机号" clearable style="width: 200px" @keyup.enter="handleSearch" />
           </el-form-item>
+          <el-form-item class="filter-actions">
+            <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
+            <el-button :icon="Refresh" @click="handleReset">重置</el-button>
+          </el-form-item>
         </div>
         <div class="filter-row">
           <el-form-item label="医生">
@@ -108,10 +112,6 @@ onMounted(loadList)
             <el-select v-model="query.status" placeholder="全部" clearable style="width: 200px" @change="handleSearch">
               <el-option v-for="item in STATUS_OPTIONS" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
-            <el-button :icon="Refresh" @click="handleReset">重置</el-button>
           </el-form-item>
         </div>
       </el-form>
@@ -201,5 +201,10 @@ onMounted(loadList)
 
 .filter-row + .filter-row {
   margin-top: 20px;
+}
+
+/* 与第二行"状态"下拉框左对齐：无 label 的按钮项补一个 label 宽度（90px） */
+.filter-actions {
+  margin-left: 90px;
 }
 </style>
