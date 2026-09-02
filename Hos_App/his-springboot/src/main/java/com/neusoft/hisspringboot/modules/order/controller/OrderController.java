@@ -15,7 +15,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "挂号记录管理", description = "预约下单、支付、取消、查询与后台挂号记录查询、管理员取消")
+@Tag(name = "挂号订单", description = "预约下单、模拟支付、取消与查询")
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor

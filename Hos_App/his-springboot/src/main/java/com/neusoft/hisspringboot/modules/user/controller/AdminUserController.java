@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "用户管理", description = "后台患者账号管理：新增、编辑、停用、删除")
+@Tag(name = "后台-用户管理", description = "WEB-03 患者账号管理")
 @RestController
 @RequestMapping("/api/admin/users")
 @RequiredArgsConstructor

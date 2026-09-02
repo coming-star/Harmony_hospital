@@ -59,6 +59,7 @@ public class DoctorService {
                 doctor.getDepartmentId(),
                 department == null ? null : department.getName(),
                 doctor.getTitle(),
+                doctor.getAvatarUrl(),
                 doctor.getIntroduction(),
                 levels
         );

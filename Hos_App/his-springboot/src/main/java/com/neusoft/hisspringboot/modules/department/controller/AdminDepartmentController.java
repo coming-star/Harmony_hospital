@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "科室管理", description = "科室树查询与后台科室新增、编辑、停用、删除")
+@Tag(name = "后台-科室管理", description = "WEB-04 科室管理")
 @RestController
 @RequestMapping("/api/admin/departments")
 @RequiredArgsConstructor
@@ -26,12 +26,10 @@ public class AdminDepartmentController {
     public ApiResponse<PageResult<Department>> list(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String departmentType,
-            @RequestParam(required = false) Long parentId,
-            @RequestParam(required = false) Boolean excludeRoot,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        return ApiResponse.success(adminDepartmentService.list(name, departmentType, parentId, excludeRoot, page, size));
+        return ApiResponse.success(adminDepartmentService.list(name, departmentType, page, size));
     }
 
     @Operation(summary = "新增科室", security = {@SecurityRequirement(name = HttpHeaders.AUTHORIZATION)})

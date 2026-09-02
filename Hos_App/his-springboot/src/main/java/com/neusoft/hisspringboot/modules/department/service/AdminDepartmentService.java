@@ -7,63 +7,45 @@ import com.neusoft.hisspringboot.common.ErrorCode;
 import com.neusoft.hisspringboot.common.PageResult;
 import com.neusoft.hisspringboot.modules.department.entity.Department;
 import com.neusoft.hisspringboot.modules.department.mapper.DepartmentMapper;
-import com.neusoft.hisspringboot.modules.doctor.mapper.DoctorMapper;
 import com.neusoft.hisspringboot.modules.doctor.entity.Doctor;
+import com.neusoft.hisspringboot.modules.doctor.mapper.DoctorMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AdminDepartmentService {
+
+    private static final String CACHE_DEPT_TREE = "deptTree";
 
     private final DepartmentMapper departmentMapper;
     private final DoctorMapper doctorMapper;
+    private final CacheManager cacheManager;
 
-    public PageResult<Department> list(String name, String departmentType, Long parentId, Boolean excludeRoot, int page, int size) {
-        boolean effectiveExcludeRoot = !Boolean.FALSE.equals(excludeRoot);
+    private void evictDeptTreeCache() {
+        Cache cache = cacheManager.getCache(CACHE_DEPT_TREE);
+        if (cache != null) {
+            cache.clear();
+            log.info("已清除科室树缓存: {}", CACHE_DEPT_TREE);
+        }
+    }
 
+    public PageResult<Department> list(String name, String departmentType, int page, int size) {
         Page<Department> mpPage = departmentMapper.selectPage(
                 new Page<>(page, size),
                 new LambdaQueryWrapper<Department>()
                         .like(name != null && !name.isBlank(), Department::getName, name)
                         .eq(departmentType != null && !departmentType.isBlank(), Department::getDepartmentType, departmentType)
-                        .eq(parentId != null, Department::getParentId, parentId)
-                        .ne(effectiveExcludeRoot, Department::getParentId, 0)
                         .orderByAsc(Department::getSortNo)
         );
 
-        List<Department> records = mpPage.getRecords();
-        fillParentNames(records);
-
-        return PageResult.of(records, mpPage.getTotal(), page, size);
-    }
-
-    private void fillParentNames(List<Department> departments) {
-        if (departments == null || departments.isEmpty()) return;
-
-        List<Long> parentIds = departments.stream()
-                .map(Department::getParentId)
-                .filter(id -> id != null && id != 0)
-                .distinct()
-                .collect(Collectors.toList());
-
-        if (parentIds.isEmpty()) return;
-
-        Map<Long, String> parentNameMap = departmentMapper.selectBatchIds(parentIds).stream()
-                .collect(Collectors.toMap(Department::getId, Department::getName, (a, b) -> a));
-
-        for (Department dept : departments) {
-            if (dept.getParentId() != null && dept.getParentId() != 0) {
-                dept.setParentName(parentNameMap.getOrDefault(dept.getParentId(), ""));
-            }
-        }
+        return PageResult.of(mpPage.getRecords(), mpPage.getTotal(), page, size);
     }
 
     public Long create(Department department) {
@@ -71,24 +53,23 @@ public class AdminDepartmentService {
         department.setId(null);
         department.setEnabled(department.getEnabled() == null ? 1 : department.getEnabled());
         departmentMapper.insert(department);
+        evictDeptTreeCache();
         return department.getId();
     }
 
     public void update(Long id, Department department) {
-        Department existing = getOrThrow(id);
-        if (existing.getParentId() != null && existing.getParentId() != 0
-                && department.getParentId() != null && department.getParentId() == 0) {
-            throw new BusinessException(ErrorCode.BUSINESS_RULE_VIOLATION, "二级科室不能降级为一级科室");
-        }
+        getOrThrow(id);
         ensureCodeAvailable(department.getCode(), id);
         department.setId(id);
         departmentMapper.updateById(department);
+        evictDeptTreeCache();
     }
 
     public void toggleStatus(Long id, Integer enabled) {
         Department department = getOrThrow(id);
         department.setEnabled(enabled);
         departmentMapper.updateById(department);
+        evictDeptTreeCache();
     }
 
     public void delete(Long id) {
@@ -103,6 +84,7 @@ public class AdminDepartmentService {
         }
 
         departmentMapper.deleteById(id);
+        evictDeptTreeCache();
     }
 
     private void ensureCodeAvailable(String code, Long excludeId) {

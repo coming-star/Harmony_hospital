@@ -4,15 +4,14 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   Odometer,
   User,
-  Grid,
-  UserFilled,
-  Calendar,
-  PriceTag,
-  Document,
+  OfficeBuilding,
   FirstAidKit,
+  Calendar,
+  Tickets,
+  List,
+  UserFilled,
   SwitchButton,
 } from '@element-plus/icons-vue'
-import { ElMessageBox } from 'element-plus'
 import { useAuthStore } from '../store/auth'
 import { adminLogout } from '../api/auth'
 
@@ -23,21 +22,16 @@ const authStore = useAuthStore()
 const menus = [
   { path: '/dashboard', title: '工作台', icon: Odometer },
   { path: '/users', title: '用户管理', icon: User },
-  { path: '/departments', title: '科室管理', icon: Grid },
-  { path: '/doctors', title: '医生管理', icon: UserFilled },
+  { path: '/departments', title: '科室管理', icon: OfficeBuilding },
+  { path: '/doctors', title: '医生管理', icon: FirstAidKit },
   { path: '/schedule-rules', title: '排班管理', icon: Calendar },
-  { path: '/levels', title: '挂号级别', icon: PriceTag },
-  { path: '/orders', title: '挂号记录', icon: Document },
+  { path: '/levels', title: '挂号级别', icon: Tickets },
+  { path: '/orders', title: '挂号记录', icon: List },
 ]
 
 const activeMenu = computed(() => route.path)
 
 async function handleLogout() {
-  try {
-    await ElMessageBox.confirm('确定要退出登录吗？', '确认退出', { type: 'warning' })
-  } catch {
-    return
-  }
   try {
     await adminLogout()
   } finally {
@@ -49,11 +43,8 @@ async function handleLogout() {
 
 <template>
   <el-container class="admin-layout">
-    <el-aside width="260px" class="admin-aside">
-      <div class="admin-logo">
-        <el-icon class="admin-logo-icon"><FirstAidKit /></el-icon>
-        <span>东软云医院后台</span>
-      </div>
+    <el-aside width="200px" class="admin-aside">
+      <div class="admin-logo">东软云医院后台</div>
       <el-menu :default-active="activeMenu" router background-color="transparent" text-color="#d5e4e8" active-text-color="#ffffff">
         <el-menu-item v-for="menu in menus" :key="menu.path" :index="menu.path">
           <el-icon class="admin-menu-icon"><component :is="menu.icon" /></el-icon>
@@ -99,47 +90,37 @@ async function handleLogout() {
 
 .admin-aside :deep(.el-menu-item) {
   color: #d5e4e8;
-  height: 52px;
-  line-height: 52px;
-  margin: 6px 0;
-  padding: 0 20px;
+  height: 46px;
+  line-height: 46px;
+  margin: 4px 0;
   border-radius: 8px;
-  font-size: 16px;
-  font-weight: 500;
   transition: all 0.2s ease;
 }
 
 .admin-aside :deep(.el-menu-item:hover) {
-  background-color: rgba(58, 166, 122, 0.15) !important;
+  background-color: rgba(255, 255, 255, 0.12);
   color: #ffffff;
 }
 
 .admin-aside :deep(.el-menu-item.is-active) {
-  background-color: #1f5f6f !important;
-  color: #ffffff !important;
+  background-color: #3aa67a;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(58, 166, 122, 0.35);
 }
 
 .admin-menu-icon {
-  margin-right: 14px;
+  margin-right: 10px;
   font-size: 18px;
 }
 
 .admin-logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 28px 0;
-  margin-bottom: 16px;
   color: #fff;
-  font-size: 24px;
-  font-weight: 700;
+  text-align: center;
+  line-height: 60px;
+  font-size: 17px;
+  font-weight: 600;
   letter-spacing: 1px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.admin-logo-icon {
-  font-size: 22px;
 }
 
 .admin-header {
@@ -154,7 +135,7 @@ async function handleLogout() {
 }
 
 .admin-page-title {
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 600;
   color: #1a2b2c;
 }

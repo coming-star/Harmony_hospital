@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "排班与号源管理", description = "号源查询与后台排班规则新增、编辑、停用、删除")
+@Tag(name = "后台-排班管理", description = "WEB-06 排班规则管理")
 @RestController
 @RequestMapping("/api/admin/schedule-rules")
 @RequiredArgsConstructor
@@ -24,11 +24,10 @@ public class AdminScheduleRuleController {
     @Operation(summary = "分页查询排班规则", security = {@SecurityRequirement(name = HttpHeaders.AUTHORIZATION)})
     @GetMapping("/list")
     public ApiResponse<PageResult<ScheduleRule>> list(
-            @RequestParam(required = false) String ruleName,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        return ApiResponse.success(adminScheduleRuleService.list(ruleName, page, size));
+        return ApiResponse.success(adminScheduleRuleService.list(page, size));
     }
 
     @Operation(summary = "新增排班规则", security = {@SecurityRequirement(name = HttpHeaders.AUTHORIZATION)})

@@ -16,7 +16,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-@Tag(name = "登录注册与认证鉴权", description = "患者/管理员注册登录登出、当前用户信息、角色权限验证")
+@Tag(name = "患者认证", description = "鸿蒙 App 患者注册与登录接口")
 @RestController
 @RequestMapping("/api/app/auth")
 @RequiredArgsConstructor

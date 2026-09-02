@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "医生管理", description = "医生详情查询与后台医生新增、编辑、停用、删除")
+@Tag(name = "医生", description = "医生详情查询")
 @RestController
 @RequiredArgsConstructor
 public class DoctorController {

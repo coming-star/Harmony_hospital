@@ -38,10 +38,4 @@ export const orderApi = {
   cancel(id) {
     return request.put(`/api/admin/orders/${id}/cancel`)
   },
-  dailyTrend() {
-    return request.get('/api/admin/orders/stats/daily-trend')
-  },
-  departmentTop() {
-    return request.get('/api/admin/orders/stats/department-top')
-  },
 }

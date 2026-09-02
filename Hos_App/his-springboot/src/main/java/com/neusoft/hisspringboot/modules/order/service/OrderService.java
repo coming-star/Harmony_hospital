@@ -15,8 +15,6 @@ import com.neusoft.hisspringboot.modules.doctor.mapper.DoctorMapper;
 import com.neusoft.hisspringboot.modules.level.entity.RegistrationLevel;
 import com.neusoft.hisspringboot.modules.level.mapper.RegistrationLevelMapper;
 import com.neusoft.hisspringboot.modules.order.dto.CreateOrderRequest;
-import com.neusoft.hisspringboot.modules.order.dto.DailyCount;
-import com.neusoft.hisspringboot.modules.order.dto.DepartmentCount;
 import com.neusoft.hisspringboot.modules.order.dto.OrderDetail;
 import com.neusoft.hisspringboot.modules.order.entity.PaymentRecord;
 import com.neusoft.hisspringboot.modules.order.entity.RegistrationOrder;
@@ -27,6 +25,9 @@ import com.neusoft.hisspringboot.modules.schedule.mapper.ScheduleSlotMapper;
 import com.neusoft.hisspringboot.modules.user.entity.SysUser;
 import com.neusoft.hisspringboot.modules.user.mapper.SysUserMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,11 +36,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * 挂号订单核心流程；状态机与并发扣号约定见 docs/06-挂号流程与状态机.md。
@@ -48,6 +45,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderService {
 
     private static final String STATUS_OPEN = "OPEN";
@@ -61,6 +59,8 @@ public class OrderService {
 
     private static final int TIMEOUT_MINUTES = 15;
 
+    private static final String CACHE_SLOT_QUERY = "slotQuery";
+
     private final RegistrationOrderMapper orderMapper;
     private final PaymentRecordMapper paymentRecordMapper;
     private final ScheduleSlotMapper scheduleSlotMapper;
@@ -69,6 +69,15 @@ public class OrderService {
     private final DepartmentMapper departmentMapper;
     private final RegistrationLevelMapper registrationLevelMapper;
     private final SysUserMapper sysUserMapper;
+    private final CacheManager cacheManager;
+
+    private void evictSlotCache() {
+        Cache cache = cacheManager.getCache(CACHE_SLOT_QUERY);
+        if (cache != null) {
+            cache.clear();
+            log.info("已清除号源查询缓存: {}", CACHE_SLOT_QUERY);
+        }
+    }
 
     @Transactional
     public OrderDetail createOrder(Long userId, CreateOrderRequest request) {
@@ -120,6 +129,8 @@ public class OrderService {
         paymentRecord.setAmountFen(order.getAmountFen());
         paymentRecord.setStatus("INIT");
         paymentRecordMapper.insert(paymentRecord);
+
+        evictSlotCache();
 
         return toDetail(order);
     }
@@ -214,71 +225,37 @@ public class OrderService {
                 .orderByDesc(RegistrationOrder::getCreatedAt);
 
         if (patientKeyword != null && !patientKeyword.isBlank()) {
+            List<Long> userIds = sysUserMapper.selectList(
+                    new LambdaQueryWrapper<SysUser>()
+                            .like(SysUser::getPhone, patientKeyword)
+                            .or().like(SysUser::getNickname, patientKeyword)
+            ).stream().map(SysUser::getId).toList();
+
             List<Long> contactIds = patientContactMapper.selectList(
-                    new LambdaQueryWrapper<PatientContact>()
-                            .like(PatientContact::getName, patientKeyword)
-                            .or().like(PatientContact::getPhone, patientKeyword)
+                    new LambdaQueryWrapper<PatientContact>().like(PatientContact::getName, patientKeyword)
             ).stream().map(PatientContact::getId).toList();
 
-            if (contactIds.isEmpty()) {
+            if (userIds.isEmpty() && contactIds.isEmpty()) {
                 return PageResult.of(List.of(), 0, page, size);
             }
 
-            wrapper.in(RegistrationOrder::getContactId, contactIds);
+            wrapper.and(inner -> {
+                if (!userIds.isEmpty()) {
+                    inner.in(RegistrationOrder::getUserId, userIds);
+                }
+                if (!contactIds.isEmpty()) {
+                    if (!userIds.isEmpty()) {
+                        inner.or();
+                    }
+                    inner.in(RegistrationOrder::getContactId, contactIds);
+                }
+            });
         }
 
         Page<RegistrationOrder> mpPage = orderMapper.selectPage(new Page<>(page, size), wrapper);
         List<OrderDetail> records = mpPage.getRecords().stream().map(this::toDetail).toList();
 
         return PageResult.of(records, mpPage.getTotal(), page, size);
-    }
-
-    /**
-     * 后台统计：近 7 天预约量趋势（按就诊日期，排除已取消，缺失日期补 0）。
-     */
-    public List<DailyCount> dailyTrend() {
-        LocalDate end = LocalDate.now();
-        LocalDate start = end.minusDays(6);
-
-        Map<LocalDate, Long> counts = orderMapper.selectList(
-                new LambdaQueryWrapper<RegistrationOrder>()
-                        .ge(RegistrationOrder::getVisitDate, start)
-                        .le(RegistrationOrder::getVisitDate, end)
-                        .ne(RegistrationOrder::getStatus, STATUS_CANCELLED)
-        ).stream().collect(Collectors.groupingBy(RegistrationOrder::getVisitDate, Collectors.counting()));
-
-        List<DailyCount> result = new ArrayList<>();
-        for (int i = 0; i < 7; i++) {
-            LocalDate date = start.plusDays(i);
-            result.add(new DailyCount(date, counts.getOrDefault(date, 0L)));
-        }
-        return result;
-    }
-
-    /**
-     * 后台统计：近 7 天科室预约量 TOP5（按就诊日期，排除已取消）。
-     */
-    public List<DepartmentCount> departmentTop5() {
-        LocalDate end = LocalDate.now();
-        LocalDate start = end.minusDays(6);
-
-        Map<String, Long> counts = orderMapper.selectList(
-                new LambdaQueryWrapper<RegistrationOrder>()
-                        .ge(RegistrationOrder::getVisitDate, start)
-                        .le(RegistrationOrder::getVisitDate, end)
-                        .ne(RegistrationOrder::getStatus, STATUS_CANCELLED)
-        ).stream().collect(Collectors.groupingBy(
-                order -> order.getDepartmentNameSnapshot() != null
-                        ? order.getDepartmentNameSnapshot()
-                        : String.valueOf(order.getDepartmentId()),
-                Collectors.counting()
-        ));
-
-        return counts.entrySet().stream()
-                .map(entry -> new DepartmentCount(entry.getKey(), entry.getValue()))
-                .sorted(Comparator.comparingLong(DepartmentCount::count).reversed())
-                .limit(5)
-                .toList();
     }
 
     @Transactional
@@ -308,6 +285,7 @@ public class OrderService {
                             .setSql("remaining_quota = remaining_quota + 1, version = version + 1")
                             .eq(ScheduleSlot::getId, current.getSlotId())
             );
+            evictSlotCache();
             return toDetail(current);
         }
 
@@ -365,15 +343,6 @@ public class OrderService {
     }
 
     private OrderDetail toDetail(RegistrationOrder order) {
-        String contactName = null;
-        String contactPhone = null;
-        if (order.getContactId() != null) {
-            PatientContact contact = patientContactMapper.selectById(order.getContactId());
-            if (contact != null) {
-                contactName = contact.getName();
-                contactPhone = contact.getPhone();
-            }
-        }
         return new OrderDetail(
                 order.getId(),
                 order.getOrderNo(),
@@ -393,9 +362,7 @@ public class OrderService {
                 order.getPaidAt(),
                 order.getCancelledAt(),
                 order.getCancelReason(),
-                order.getCreatedAt(),
-                contactName,
-                contactPhone
+                order.getCreatedAt()
         );
     }
 

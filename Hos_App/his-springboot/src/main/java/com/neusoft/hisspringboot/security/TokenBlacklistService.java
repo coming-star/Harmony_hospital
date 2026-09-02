@@ -1,35 +1,31 @@
 package com.neusoft.hisspringboot.security;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.time.Duration;
 
-/**
- * 登出 Token 黑名单，基于 JVM 内存实现，仅适用于单实例本地开发/演示环境。
- * 后续多实例部署应迁移至 Redis（key 为 jti，value 为过期时间，TTL 与 Token 剩余有效期一致）。
- */
 @Component
+@RequiredArgsConstructor
+@Slf4j
 public class TokenBlacklistService {
 
-    private final Map<String, Long> blacklist = new ConcurrentHashMap<>();
+    private static final String KEY_PREFIX = "his:token:blacklist:";
+
+    private final StringRedisTemplate redisTemplate;
 
     public void blacklist(String jti, long expireAtEpochMillis) {
-        blacklist.put(jti, expireAtEpochMillis);
+        long now = System.currentTimeMillis();
+        long remainingMillis = Math.max(expireAtEpochMillis - now, 1000);
+
+        String key = KEY_PREFIX + jti;
+        redisTemplate.opsForValue().set(key, "1", Duration.ofMillis(remainingMillis));
+        log.info("Token已加入黑名单: jti={}, ttl={}s", jti, remainingMillis / 1000);
     }
 
     public boolean isBlacklisted(String jti) {
-        Long expireAt = blacklist.get(jti);
-
-        if (expireAt == null) {
-            return false;
-        }
-
-        if (expireAt < System.currentTimeMillis()) {
-            blacklist.remove(jti);
-            return false;
-        }
-
-        return true;
+        return Boolean.TRUE.equals(redisTemplate.hasKey(KEY_PREFIX + jti));
     }
 }

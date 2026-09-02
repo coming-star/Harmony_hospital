@@ -50,8 +50,6 @@
 }
 
 body {
-  margin: 0;
-  padding: 0;
   color: #1a2b2c;
   background-color: #f0f7f4;
   font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
@@ -94,7 +92,7 @@ body {
 
 /* ============ 表格：表头 / 边框 / 斑马纹 / 行悬停 ============ */
 .el-table {
-  --el-table-header-bg-color: #f0f7f4;
+  --el-table-header-bg-color: #eaf2f3;
   --el-table-header-text-color: #1a2b2c;
   --el-table-border-color: #e3ede9;
   --el-table-row-hover-bg-color: #eaf6f1;
@@ -104,24 +102,8 @@ body {
 }
 
 .el-table th.el-table__cell {
-  font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: #1a2b2c;
-}
-
-.el-table td.el-table__cell {
-  font-size: 14px;
-  font-weight: 400;
-  vertical-align: middle;
-}
-
-.el-table th.el-table__cell .cell,
-.el-table td.el-table__cell .cell {
-  text-align: center;
-}
-
-.el-table td.el-table__cell.cell-left .cell {
-  text-align: left;
 }
 
 /* ============ 标签 / 分页 / 对话框 圆角统一 ============ */

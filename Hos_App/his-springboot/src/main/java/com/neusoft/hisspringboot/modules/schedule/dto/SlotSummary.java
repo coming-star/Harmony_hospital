@@ -7,6 +7,7 @@ public record SlotSummary(
         Long slotId,
         Long doctorId,
         String doctorName,
+        String doctorAvatarUrl,
         Long departmentId,
         Long levelId,
         String levelName,
