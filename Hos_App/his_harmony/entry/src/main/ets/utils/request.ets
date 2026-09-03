@@ -1,14 +1,6 @@
 /**
  * 全局请求封装（块 A 最核心的交付物，所有 API 调用必须走这里，禁止页面直接 import http）。
- *
- * 功能清单：
- *   1. 统一 baseUrl、统一 headers（Content-Type + Authorization Bearer）
- *   2. 登录态 401 自动踢到登录页并清除本地 token
- *   3. 业务错误码 → 中文 toast 映射（跟 docs/08-接口文档-演示版.md §错误码目录完全一致）
- *   4. 统一 loading 开关（可选，默认关闭，传 { loading: true } 打开）
- *   5. 统一导出 get / post / put / del 四个方法，返回 Promise<T>（T 是 data 部分，不是外层 ApiResponse）
- *
- * 依赖：http（系统 @ohos.net.http）、promptAction / router（系统）、UserStore（本项目）
+ * ArkTS 严格子集合规版：裸 catch、Map 传参、无索引签名/中括号访问/any/unknown/交叉类型。
  */
 import { http } from '@kit.NetworkKit'
 import { promptAction } from '@kit.ArkUI'
@@ -16,23 +8,26 @@ import router from '@ohos.router'
 import { UserStore } from '../store/UserStore'
 import { Route } from './theme'
 
-/** 后端地址：模拟器访问宿主机用 10.0.2.2；真机/局域网改成后端电脑的 LAN IP，如 http://192.168.1.100:8080 */
-export const BASE_URL = 'http://10.0.2.2:8080'
+/** 后端地址：
+ *  预览器用 127.0.0.1:8081；真机改成电脑局域网 IP:8081（如 http://192.168.1.100:8081）；
+ *  Android 模拟器用 10.0.2.2:8081。后端端口见 application.yml 的 server.port。 */
+export const BASE_URL = 'http://127.0.0.1:8081'
 
 /** 业务错误码 → 中文文案（与后端 ErrorCode 枚举一一对应）*/
-const BIZ_MSG: Record<number, string> = {
-  409001: '该手机号已注册，请直接登录',
-  409002: '该身份证已绑定其他就诊人',
-  409003: '该时段已约满，请换一个时段',
-  409004: '订单状态已变化，操作不可执行',
-  409005: '存在关联数据引用，请先停用或取消',
-  409006: '编码已存在'
+function bizMsg(code: number): string {
+  switch (code) {
+    case 409001: return '该手机号已注册，请直接登录'
+    case 409002: return '该身份证已绑定其他就诊人'
+    case 409003: return '该时段已约满，请换一个时段'
+    case 409004: return '订单状态已变化，操作不可执行'
+    case 409005: return '存在关联数据引用，请先停用或取消'
+    case 409006: return '编码已存在'
+    default: return ''
+  }
 }
 
 export interface RequestOptions {
-  loading?: boolean        // 是否显示"加载中"系统 toast，默认 false
-  headers?: Record<string, string>
-  /** 返回完整 ApiResponse，不剥 data 层；极少数场景（如分页外层 total）使用 */
+  loading?: boolean
   raw?: boolean
 }
 
@@ -42,33 +37,39 @@ export interface ApiResponse<T> {
   data: T
 }
 
-function toast(msg: string, duration = 1500): void {
-  try { promptAction.showToast({ message: msg, duration }) } catch(_: Error) { /* ignore */ }
+function toast(msg: string, duration: number = 1500): void {
+  try {
+    promptAction.showToast({ message: msg, duration: duration })
+  } catch (e) {
+  }
 }
 
 function showLoading(on: boolean): void {
   if (!on) return
-  try { promptAction.showDialog({ message: '加载中…' }).catch(() => {}) } catch(_: Error) {}
+  try {
+    promptAction.showDialog({ message: '加载中…' })
+  } catch (e) {
+  }
 }
 
-function mergeHeaders(custom?: Record<string, string>): Record<string, string> {
+/** 固定请求头：Content-Type / Accept / Authorization（带 token 才填 Authorization）。
+ * 注意：ArkTS 解析器不支持带连字符的引号键名（如 'Content-Type'），
+ * 这里用 JSON.parse 从字符串构造请求头对象来绕开。 */
+function buildHeaders(): Object {
   const token: string = UserStore.getToken()
-  const h: Record<string, string> = {
-    'Content-Type': 'application/json; charset=UTF-8',
-    Accept: 'application/json',
-    ...(custom ?? {})
-  }
-  if (token) h['Authorization'] = `Bearer ${token}`
-  return h
+  const auth: string = token ? `Bearer ${token}` : ''
+  const json: string = `{"Content-Type":"application/json; charset=UTF-8","Accept":"application/json","Authorization":"${auth}"}`
+  return JSON.parse(json) as Object
 }
 
 function handleHttpError(resp: http.HttpResponse): void {
   if (resp.responseCode === 401) {
-    UserStore.logoutSync()
+    UserStore.instance.logoutSync()
     toast('登录已失效，请重新登录')
     try {
       router.replaceUrl({ url: Route.LOGIN })
-    } catch(_: Error) {}
+    } catch (e) {
+    }
     return
   }
   if (resp.responseCode === 403) {
@@ -85,25 +86,32 @@ function handleHttpError(resp: http.HttpResponse): void {
   }
 }
 
-/** 通用请求内核：统一 ApiResponse 解包 + 错误处理 */
-async function request<T>(
+/** 把 query 的 Map 拼成 URL 查询串 */
+function buildQueryString(query: Map<string, string>): string {
+  const params: string[] = []
+  query.forEach((value: string, key: string) => {
+    if (value !== '') {
+      params.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+    }
+  })
+  return params.join('&')
+}
+
+async function doRequest<T>(
   method: http.RequestMethod,
   path: string,
-  queryOrBody?: unknown,
-  opts: RequestOptions = {}
+  query: Map<string, string>,
+  body: Object | undefined,
+  opts: RequestOptions
 ): Promise<T> {
   const url: string = path.startsWith('http') ? path : `${BASE_URL}${path}`
   let finalUrl: string = url
 
-  // GET/DELETE：queryOrBody 拼 query
-  if ((method === http.RequestMethod.GET || method === http.RequestMethod.DELETE)
-      && queryOrBody && typeof queryOrBody === 'object') {
-    const params: string[] = []
-    Object.entries(queryOrBody as Record<string, unknown>).forEach(([k, v]) => {
-      if (v === null || v === undefined || v === '') return
-      params.push(`${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
-    })
-    if (params.length) finalUrl += (finalUrl.includes('?') ? '&' : '?') + params.join('&')
+  if ((method === http.RequestMethod.GET || method === http.RequestMethod.DELETE) && query.size > 0) {
+    const qs: string = buildQueryString(query)
+    if (qs !== '') {
+      finalUrl += (finalUrl.includes('?') ? '&' : '?') + qs
+    }
   }
 
   showLoading(!!opts.loading)
@@ -112,69 +120,62 @@ async function request<T>(
   try {
     const httpRequest: http.HttpRequest = http.createHttp()
     const extraData: string | undefined = (method === http.RequestMethod.POST || method === http.RequestMethod.PUT)
-      ? (queryOrBody !== undefined ? JSON.stringify(queryOrBody) : undefined)
+      ? (body !== undefined ? JSON.stringify(body) : undefined)
       : undefined
-
     resp = await httpRequest.request(finalUrl, {
-      method,
-      header: mergeHeaders(opts.headers),
-      extraData,
+      method: method,
+      header: buildHeaders(),
+      extraData: extraData,
       connectTimeout: 15000,
       readTimeout: 15000
     })
     httpRequest.destroy()
-  } catch (e: unknown) {
+  } catch (e) {
     toast('网络异常，请检查网络后重试')
-    throw e as Error
+    throw new Error('网络异常，请检查网络后重试')
   }
 
-  // 非 2xx：按 HTTP 状态处理
   if (resp.responseCode < 200 || resp.responseCode >= 300) {
     handleHttpError(resp)
-    const err: Error = new Error(`HTTP ${resp.responseCode}`)
-    const ext: Error & { code?: number } = err as Error & { code?: number }
-    ext.code = resp.responseCode
-    throw ext
+    throw new Error(`HTTP ${resp.responseCode}`)
   }
 
-  // 解析 JSON
   let payload: ApiResponse<T>
   try {
     payload = typeof resp.result === 'string'
       ? JSON.parse(resp.result) as ApiResponse<T>
       : (resp.result as ApiResponse<T>)
-  } catch(_: Error) {
+  } catch (e) {
     toast('响应格式错误')
-    throw new Error('Invalid JSON response')
+    throw new Error('响应格式错误')
   }
 
-  // 业务 code 不是 200：根据 code 弹 toast
   if (payload.code !== 200) {
-    const msg: string = BIZ_MSG[payload.code] ?? payload.message ?? '操作失败'
+    const msg: string = bizMsg(payload.code) || payload.message || '操作失败'
     toast(msg)
-    const err: Error = new Error(msg)
-    const ext: Error & { code?: number } = err as Error & { code?: number }
-    ext.code = payload.code
-    throw ext
+    throw new Error(msg)
   }
 
-  const out: T = (opts.raw ? (payload as unknown as T) : payload.data) as T
-  return out
+  if (opts.raw) {
+    return payload as Object as T
+  }
+  return payload.data
 }
 
-/** 导出的四个方法；调用示例：const list = await get<DepartmentTreeNode[]>('/api/departments/tree') */
-export function get<T>(url: string, query?: Record<string, unknown>, opts?: RequestOptions): Promise<T> {
-  return request<T>(http.RequestMethod.GET, url, query, opts)
+export function get<T>(url: string, query?: Map<string, string>, opts?: RequestOptions): Promise<T> {
+  const q: Map<string, string> = query ?? new Map<string, string>()
+  return doRequest<T>(http.RequestMethod.GET, url, q, undefined, opts ?? {})
 }
 
-export function post<T>(url: string, body?: unknown, opts?: RequestOptions): Promise<T> {
-  return request<T>(http.RequestMethod.POST, url, body, opts)
+export function post<T>(url: string, body?: Object, opts?: RequestOptions): Promise<T> {
+  return doRequest<T>(http.RequestMethod.POST, url, new Map<string, string>(), body, opts ?? {})
 }
 
-export function put<T>(url: string, body?: unknown, opts?: RequestOptions): Promise<T> {
-  return request<T>(http.RequestMethod.PUT, url, body, opts)
+export function put<T>(url: string, body?: Object, opts?: RequestOptions): Promise<T> {
+  return doRequest<T>(http.RequestMethod.PUT, url, new Map<string, string>(), body, opts ?? {})
 }
 
-export function del<T>(url: string, query?: Record<string, unknown>, opts?: RequestOptions): Promise<T> {
-  return request<T>(http.RequestMethod.DELETE, url, query, opts)
+export function del<T>(url: string, query?: Map<string, string>, opts?: RequestOptions): Promise<T> {
+  const q: Map<string, string> = query ?? new Map<string, string>()
+  return doRequest<T>(http.RequestMethod.DELETE, url, q, undefined, opts ?? {})
 }

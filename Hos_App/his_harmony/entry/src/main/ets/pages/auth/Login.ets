@@ -38,7 +38,7 @@ struct Login {
       await userStore.setLogin(r)
       promptAction.showToast({ message:'登录成功' })
       router.replaceUrl({ url: Route.HOME })
-    } catch(_: Error) {}
+    } catch (_) {}
     finally { this.loading = false }
   }
 
@@ -49,7 +49,7 @@ struct Login {
       Scroll() {
         Column() {
           // 听诊器大 logo
-          StethoscopeIcon({ size: 108 }).margin({ top: 48, bottom: 24 })
+          StethoscopeIcon({ iconSize: 108 }).margin({ top: 48, bottom: 24 })
           Text('欢迎回来').fontSize(28).fontWeight(800).fontColor($r('app.color.text_primary'))
             .margin({ bottom: 8 })
           Text('登录东软云医院预约挂号系统')
@@ -88,13 +88,13 @@ struct Login {
           .width('86%').margin({ top: 16, bottom: 32 })
           .justifyContent(FlexAlign.Start)
 
-          PrimaryButton({ label:'登录', enabled:!this.loading, onClick: () => this.submit() })
+          PrimaryButton({ label:'登录', isEnabled:!this.loading, onTap: () => this.submit() })
             .width('86%').margin({ bottom: 16 })
 
           Row() {
             Text('还没有账号？').fontSize(14).fontColor($r('app.color.text_hint'))
             Text('立即注册').fontSize(14).fontColor($r('app.color.text_blue')).fontWeight(600)
-              .onClick(() => { try { router.pushUrl({ url: Route.REGISTER }) } catch(_: Error) {} })
+              .onClick(() => { try { router.pushUrl({ url: Route.REGISTER }) } catch (_) {} })
           }.margin({ top: 8, bottom: 40 })
         }
         .width('100%').alignItems(HorizontalAlign.Center)

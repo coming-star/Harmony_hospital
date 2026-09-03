@@ -16,7 +16,7 @@ struct DepartmentSelect {
   @State search: string = ''
   @State tree: DepartmentTreeNode[] = []
   async aboutToAppear(): Promise<void> {
-    try { this.tree = await deptApi.getDepartmentTree() } catch(_: Error) {}
+    try { this.tree = await deptApi.getDepartmentTree() } catch (_) {}
   }
 
   /** 全部二级科室扁平化，支持按名称模糊搜索 */
@@ -59,7 +59,7 @@ struct DepartmentSelect {
               Column() {
                 Row() {
                   Stack() {
-                    Stack() { Blank() }.width(52).height(52).borderRadius(14).backgroundColor($r('app.color.primary_light'))
+                    Column().width(52).height(52).borderRadius(14).backgroundColor($r('app.color.primary_light'))
                     Text('🩺').fontSize(24)
                   }.margin({ right: 14 })
                   Column() {
@@ -80,7 +80,7 @@ struct DepartmentSelect {
                 router.pushUrl({ url: Route.DOCTOR_LIST, params: { departmentId: s.id } })
               })
             }.width('100%')
-          }, s => String(s.id))
+          }, (s: DepartmentTreeNode) => String(s.id))
         }.layoutWeight(1).width('100%').padding({ left: 16, right: 16 })
       }
     }.width('100%').height('100%').backgroundColor($r('app.color.bg_page'))

@@ -15,28 +15,24 @@
  */
 import { promptAction } from '@kit.ArkUI'
 
-@CustomDialog
+@Component
 export struct ConfirmDialog {
-  @Link show: boolean
-
   @Prop title: string = '温馨提示'
   @Prop message: string = ''
   @Prop confirmText: string = '确定'
   @Prop cancelText: string = '取消'
   /** 危险操作（确认按钮变红）*/
   @Prop danger: boolean = false
-  @Link? onConfirm?: () => void
-  @Link? onCancel?: () => void
+  onConfirm?: () => void
+  onCancel?: () => void
 
   private ok(): void {
-    this.show = false
     try {
       if (this.onConfirm) this.onConfirm()
       else promptAction.showToast({ message: this.confirmText })
-    } catch(_: Error) {}
+    } catch (_) {}
   }
   private no(): void {
-    this.show = false
     if (this.onCancel) this.onCancel()
   }
 
@@ -56,7 +52,7 @@ export struct ConfirmDialog {
         .layoutWeight(1)
 
       Row() {
-        Button(this.cancelText, ButtonType.Normal)
+        Button(this.cancelText, { type: ButtonType.Normal })
           .layoutWeight(1)
           .height($r('app.float.btn_height_md'))
           .backgroundColor($r('app.color.bg_page'))
@@ -65,7 +61,7 @@ export struct ConfirmDialog {
           .margin({ right: $r('app.float.sp_12') })
           .onClick(() => this.no())
 
-        Button(this.confirmText, ButtonType.Normal)
+        Button(this.confirmText, { type: ButtonType.Normal })
           .layoutWeight(1)
           .height($r('app.float.btn_height_md'))
           .backgroundColor(this.danger ? $r('app.color.danger') : $r('app.color.primary'))

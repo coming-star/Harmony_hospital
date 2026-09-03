@@ -4,13 +4,13 @@
  * 逻辑：单选一个就诊人 → 去订单确认；没有就诊人 → 新增弹表单
  */
 import router from '@ohos.router'
-import type { PatientContact, ContactRequest, Relation } from '../../types'
+import type { PatientContact, ContactRequest, RelationOption, Relation } from '../../types'
 import * as contactApi from '../../api/contact'
 import { AvatarIcon } from '../../components/AvatarIcon'
 import { AppBar } from '../../components/AppBar'
 import { PrimaryButton } from '../../components/PrimaryButton'
 import { Route } from '../../utils/theme'
-import { RelationText } from '../../types'
+import { RelationValue, relationText } from '../../types'
 import { RelationList } from '../../types'
 import { promptAction } from '@kit.ArkUI'
 
@@ -23,7 +23,7 @@ struct ContactSelect {
   @State addSheet: boolean = false
   @State addName: string = ''
   @State addPhone: string = ''
-  @State addRelation: Relation = Relation.SELF
+  @State addRelation: Relation = RelationValue.SELF
 
   async aboutToAppear(): Promise<void> {
     const p: Record<string, Object> | undefined = router.getParams() as Record<string, Object> | undefined
@@ -31,7 +31,7 @@ struct ContactSelect {
     await this.load()
   }
   private async load(): Promise<void> {
-    try { this.list = await contactApi.listContacts() } catch(_: Error) {}
+    try { this.list = await contactApi.listContacts() } catch (_) {}
   }
   private goConfirm(): void {
     if (!this.selectedId) { promptAction.showToast({ message: '请选择就诊人' }); return }
@@ -42,12 +42,12 @@ struct ContactSelect {
     if (!/^1\d{10}$/.test(this.addPhone)) { promptAction.showToast({ message:'手机号格式错误' }); return }
     const body: ContactRequest = { name: this.addName, phone: this.addPhone, relation: this.addRelation }
     try {
-      const r: { contactId: number } = await contactApi.createContact(body)
+      const r = await contactApi.createContact(body)
       this.addSheet = false
       this.addName = ''; this.addPhone = ''
       await this.load()
       this.selectedId = r.contactId
-    } catch(_: Error) {}
+    } catch (_) {}
   }
 
   @Builder AddContactSheet() {
@@ -59,7 +59,7 @@ struct ContactSelect {
         .type(InputType.PhoneNumber).onChange(v => this.addPhone = v)
       // 关系单选（简化 5 个 Chip）
       Flex({ wrap: FlexWrap.Wrap }) {
-        ForEach(RelationList, r => {
+        ForEach(RelationList, (r: RelationOption) => {
           Text(r.label)
             .fontSize(13)
             .padding({left:14,right:14,top:6,bottom:6})
@@ -70,7 +70,7 @@ struct ContactSelect {
             .borderWidth(1).borderColor(this.addRelation===r.key ? $r('app.color.primary') : $r('app.color.divider'))
             .onClick(() => { this.addRelation = r.key })
         })
-      }.width('86%').justifyContent(FlexAlign.Start)
+      }.width('86%')
 
       Button('保存').width('86%').height(48).margin({top:20,bottom:24})
         .backgroundColor($r('app.color.primary'))
@@ -88,12 +88,11 @@ struct ContactSelect {
               Radio({ value: 'c_'+c.id, group: 'contacts' })
                 .checked(this.selectedId === c.id)
                 .onChange(() => { this.selectedId = c.id })
-                .selectedColor($r('app.color.primary'))
-              AvatarIcon({ name: c.name, size: 44 }).margin({ left: 8 })
+              AvatarIcon({ name: c.name, iconSize: 44 }).margin({ left: 8 })
               Column() {
                 Row() {
                   Text(c.name).fontSize(15).fontWeight(600).margin({right:8})
-                  Text(RelationText[c.relation] ?? '').fontSize(11)
+                  Text(relationText(c.relation)).fontSize(11)
                     .padding({left:8,right:8,top:2,bottom:2})
                     .backgroundColor($r('app.color.primary_light'))
                     .fontColor($r('app.color.primary'))
@@ -107,20 +106,20 @@ struct ContactSelect {
           }
           .borderWidth({bottom:0.5}).borderColor($r('app.color.divider'))
           .width('92%').alignSelf(ItemAlign.Center)
-        }, c => String(c.id))
+        }, (c: PatientContact) => String(c.id))
       }.layoutWeight(1).width('100%').margin({top:12})
 
       Row() {
         PrimaryButton({
-          label:'新增就诊人', variant:'light', onClick: () => { this.addSheet = true }
+          label:'新增就诊人', variant:'light', onTap: () => { this.addSheet = true }
         }).width('45%').margin({right:12})
         PrimaryButton({
-          label:'下一步', variant:'primary', onClick: () => this.goConfirm()
+          label:'下一步', variant:'primary', onTap: () => this.goConfirm()
         }).width('45%')
       }.padding(16)
     }
     .width('100%').height('100%').backgroundColor($r('app.color.bg_page'))
-    .bindSheet($$$this.addSheet, this.AddContactSheet(),
+    .bindSheet($$this.addSheet, this.AddContactSheet(),
       { height: 520, showClose: true, dragBar: true })
   }
 }

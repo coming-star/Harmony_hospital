@@ -5,6 +5,13 @@
  * 间距/字号/圆角优先用 $r('app.float.xxx')（由 float.json 管理），
  * 这里主要放代码侧需要的"命名+组合"，比如线性渐变颜色对、阴影 BlurStyle 等。
  */
+export interface TabColorMap {
+  home: string
+  appointment: string
+  ai: string
+  mine: string
+}
+
 export class Theme {
   // ========== 色（对应 color.json，方便代码侧做条件判断）==========
   // 统一品牌蓝 (#0A66C2)，与登录/注册/首页参考图完全一致
@@ -24,7 +31,7 @@ export class Theme {
   static readonly DIVIDER = '#EAECF0'
 
   // Tabs 图标 & 标签选中色：全部统一主品牌蓝（和参考图 Tabs 一样：选中全蓝）
-  static TabActiveColor: Record<string, string> = {
+  static TabActiveColor: TabColorMap = {
     home: Theme.PRIMARY,
     appointment: Theme.PRIMARY,
     ai: Theme.PRIMARY,
@@ -59,15 +66,29 @@ export class Route {
 /**
  * Tabs 四个底部 Tab 的 key，用于 Index 的 Tabs 组件 selectedIndex。
  */
-export const TAB_KEYS = ['home', 'appointment', 'ai', 'mine'] as const
-export type TabKey = (typeof TAB_KEYS)[number]
-export const TAB_LABELS: Record<TabKey, string> = {
+export type TabKey = 'home' | 'appointment' | 'ai' | 'mine'
+export const TAB_KEYS: TabKey[] = ['home', 'appointment', 'ai', 'mine']
+
+export interface TabLabelMap {
+  home: string
+  appointment: string
+  ai: string
+  mine: string
+}
+export const TAB_LABELS: TabLabelMap = {
   home: '首页',
   appointment: '预约',
   ai: 'AI',
   mine: '我的'
 }
-export const TAB_INDEX: Record<TabKey, number> = {
+
+export interface TabIndexMap {
+  home: number
+  appointment: number
+  ai: number
+  mine: number
+}
+export const TAB_INDEX: TabIndexMap = {
   home: 0,
   appointment: 1,
   ai: 2,

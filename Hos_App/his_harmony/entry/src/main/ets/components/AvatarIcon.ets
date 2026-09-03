@@ -9,10 +9,10 @@
 @Component
 export struct AvatarIcon {
   @Prop name: string = ''
-  @Prop url?: string
-  @Prop size: number | string = 48
+  @Prop url: string = ''
+  @Prop iconSize: number | string = 48
   /** 手动指定背景色（主色），不传则按名字 hash */
-  @Prop bg?: ResourceColor
+  @Prop bg: ResourceColor | undefined = undefined
 
   private pickBg(): ResourceColor {
     if (this.bg) return this.bg
@@ -35,31 +35,31 @@ export struct AvatarIcon {
     return first.toUpperCase()
   }
 
-  private fontSize(): Length {
-    return typeof this.size === 'number' ? (this.size as number) * 0.42 : '42%'
+  private pickFontSize(): Length {
+    return typeof this.iconSize === 'number' ? (this.iconSize as number) * 0.42 : '42%'
   }
 
   build() {
     Stack({ alignContent: Alignment.Center }) {
       if (this.url && this.url.length > 0) {
         Image(this.url)
-          .width(this.size)
-          .height(this.size)
+          .width(this.iconSize)
+          .height(this.iconSize)
           .borderRadius(9999)
           .objectFit(ImageFit.Cover)
           .backgroundColor($r('app.color.primary_light'))
       } else {
         Circle()
-          .width(this.size)
-          .height(this.size)
+          .width(this.iconSize)
+          .height(this.iconSize)
           .fill(this.pickBg())
         Text(this.initial())
-          .fontSize(this.fontSize())
+          .fontSize(this.pickFontSize())
           .fontColor($r('app.color.text_white'))
           .fontWeight(FontWeight.Bold)
       }
     }
-    .width(this.size)
-    .height(this.size)
+    .width(this.iconSize)
+    .height(this.iconSize)
   }
 }

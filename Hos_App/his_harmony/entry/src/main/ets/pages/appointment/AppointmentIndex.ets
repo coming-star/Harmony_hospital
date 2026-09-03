@@ -10,7 +10,7 @@ import { Route } from '../../utils/theme'
 struct AppointmentIndex {
   aboutToAppear(): void {
     // Tab 首次切换到 appointment 时自动跳到科室选择页（跟小程序"预约 Tab 是第一流程页"一样）
-    try { router.pushUrl({ url: Route.DEPT_SELECT }) } catch(_: Error) {}
+    try { router.pushUrl({ url: Route.DEPT_SELECT }) } catch (_) {}
   }
   build() {
     Column().width('100%').height('100%').backgroundColor($r('app.color.bg_page'))

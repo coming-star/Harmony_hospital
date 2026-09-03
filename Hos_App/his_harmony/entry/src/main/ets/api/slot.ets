@@ -9,9 +9,11 @@ export interface SlotQuery {
 
 /** 号源查询：按 科室 + 日期 查询，前端遍历未来 7 天分别调用。已缓存。 */
 export function listSlots(q: SlotQuery): Promise<SlotSummary[]> {
-  return get<SlotSummary[]>('/api/slots', {
-    departmentId: q.departmentId,
-    date: q.date,
-    ...(q.levelId ? { levelId: q.levelId } : {})
-  })
+  const query: Map<string, string> = new Map<string, string>()
+  query.set('departmentId', String(q.departmentId))
+  query.set('date', q.date)
+  if (q.levelId) {
+    query.set('levelId', String(q.levelId))
+  }
+  return get<SlotSummary[]>('/api/slots', query)
 }

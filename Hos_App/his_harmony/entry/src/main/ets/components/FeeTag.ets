@@ -13,11 +13,11 @@ export struct FeeTag {
   /** 后端金额，单位：分 */
   @Prop fen: number = 0
   @Prop type: FeeType = 'primary'
-  @Prop size: FeeSize = 'md'
+  @Prop iconSize: FeeSize = 'md'
   /** 是否显示 ¥ 前缀 */
   @Prop withPrefix: boolean = true
 
-  private color(): ResourceColor {
+  private pickColor(): ResourceColor {
     switch (this.type) {
       case 'danger':    return $r('app.color.danger')
       case 'secondary': return $r('app.color.secondary_booking')
@@ -26,8 +26,8 @@ export struct FeeTag {
       default:          return $r('app.color.primary')
     }
   }
-  private font(): ResourceStr {
-    switch (this.size) {
+  private pickFont(): ResourceStr {
+    switch (this.iconSize) {
       case 'lg': return $r('app.float.fs_20')
       case 'sm': return $r('app.float.fs_14')
       case 'md':
@@ -38,8 +38,8 @@ export struct FeeTag {
   build() {
     Row() {
       Text(Format.yuan(this.fen, this.withPrefix))
-        .fontColor(this.color())
-        .fontSize(this.font())
+        .fontColor(this.pickColor())
+        .fontSize(this.pickFont())
         .fontWeight(FontWeight.Bold)
     }
   }

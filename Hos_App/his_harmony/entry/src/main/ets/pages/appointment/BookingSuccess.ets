@@ -15,12 +15,12 @@ import { PrimaryButton } from '../../components/PrimaryButton'
 @Entry
 @Component
 struct BookingSuccess {
-  @State order?: OrderDetail
+  @State order: OrderDetail | undefined = undefined
 
   async aboutToAppear(): Promise<void> {
     const p: Record<string, Object> | undefined = router.getParams() as Record<string, Object> | undefined
     if (p && p['orderId']) {
-      try { this.order = await orderApi.getOrder(String(p['orderId'])) } catch(_: Error) {}
+      try { this.order = await orderApi.getOrder(String(p['orderId'])) } catch (_) {}
     }
   }
 
@@ -54,7 +54,7 @@ struct BookingSuccess {
           this.KV('就诊时间', `${Format.date(this.order!.visitDate)} ${Format.time(this.order!.startTime)}-${Format.time(this.order!.endTime)}`)
           this.KV('就诊人', `${this.order!.contactName} (${Format.maskPhone(this.order!.contactPhone)})`)
           Row() { Text('支付金额').layoutWeight(1).fontSize(14).fontColor($r('app.color.text_secondary'))
-                 FeeTag({ fen: this.order!.amountFen, type:'primary', size:'md' }) }
+                 FeeTag({ fen: this.order!.amountFen, type:'primary', iconSize:'md' }) }
             .margin({top:10})
         }
         .width('92%').padding(16).backgroundColor($r('app.color.bg_card')).borderRadius(16)
@@ -63,9 +63,9 @@ struct BookingSuccess {
       Blank().layoutWeight(1)
 
       Row() {
-        PrimaryButton({ label:'查看挂号记录', variant:'light', onClick:() => this.goRecord() })
+        PrimaryButton({ label:'查看挂号记录', variant:'light', onTap:() => this.goRecord() })
           .width('45%').margin({right:12})
-        PrimaryButton({ label:'返回首页', variant:'primary', onClick:() => this.goHome() })
+        PrimaryButton({ label:'返回首页', variant:'primary', onTap:() => this.goHome() })
           .width('45%')
       }.padding(16)
     }

@@ -8,9 +8,9 @@
 export struct SectionTitle {
   @Prop title: string = ''
   /** 传了就显示"查看全部"（或自定义文字）按钮 */
-  @Prop moreText?: string
+  @Prop moreText: string = ''
   @Prop titleColor: ResourceColor = $r('app.color.text_primary')
-  @Link? onMore?: () => void
+  onMore?: () => void
 
   build() {
     Row() {
