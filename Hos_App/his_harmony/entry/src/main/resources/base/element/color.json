@@ -1,8 +1,40 @@
 {
   "color": [
-    {
-      "name": "start_window_background",
-      "value": "#FFFFFF"
-    }
+    { "name": "start_window_background", "value": "#FFFFFF" },
+    { "name": "app_name",              "value": "东软云医院" },
+
+    { "name": "primary",                "value": "#0A66C2" },
+    { "name": "primary_light",          "value": "#E8F1FC" },
+    { "name": "primary_dark",           "value": "#084F96" },
+    { "name": "secondary_booking",      "value": "#0A66C2" },
+    { "name": "secondary_booking_light","value": "#E8F1FC" },
+    { "name": "secondary_ai",           "value": "#0A66C2" },
+    { "name": "secondary_ai_light",     "value": "#E8F1FC" },
+    { "name": "success",                "value": "#16A34A" },
+    { "name": "success_light",          "value": "#E8F6EF" },
+    { "name": "warning",                "value": "#F59E0B" },
+    { "name": "warning_light",          "value": "#FEF5E4" },
+    { "name": "danger",                 "value": "#DB3A2F" },
+    { "name": "danger_light",           "value": "#FCEBE9" },
+    { "name": "disabled",               "value": "#9CA3AF" },
+    { "name": "disabled_light",         "value": "#F3F4F6" },
+
+    { "name": "text_primary",           "value": "#1A1A1A" },
+    { "name": "text_secondary",         "value": "#5B6370" },
+    { "name": "text_hint",              "value": "#9CA3AF" },
+    { "name": "text_white",             "value": "#FFFFFF" },
+    { "name": "text_blue",              "value": "#0A66C2" },
+
+    { "name": "bg_page",                "value": "#FAFBFC" },
+    { "name": "bg_card",                "value": "#FFFFFF" },
+    { "name": "input_bg",               "value": "#F5F7FA" },
+    { "name": "divider",                "value": "#EAECF0" },
+    { "name": "border",                 "value": "#E5E7EB" },
+
+    { "name": "overlay",                "value": "#66000000" },
+    { "name": "gradient_from",          "value": "#0A66C2" },
+    { "name": "gradient_to",            "value": "#1890FF" },
+
+    { "name": "stethoscope_bg",         "value": "#E8F1FC" }
   ]
 }

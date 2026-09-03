@@ -1,0 +1,335 @@
+/**
+ * 全局类型定义（所有 DTO / 枚举 / 通用包装）。
+ * 字段名、注释、示例值与后端 Java DTO / 实体严格对齐，**前端不重复定义 interface**。
+ * 任何接口新增字段时，先在这里补 interface，再改调用方页面 / api 模块。
+ */
+
+// ============== 通用包装 ==============
+export interface ApiResponse<T> {
+  code: number
+  message: string
+  data: T
+}
+
+export interface PageResult<T> {
+  records: T[]
+  total: number
+  page: number
+  size: number
+}
+
+export interface ToggleStatusRequest {
+  enabled: 0 | 1
+}
+
+// ============== 枚举常量（字符串常量，不要页面里写死字面量）==============
+export const OrderStatus = {
+  PENDING_PAYMENT: 'PENDING_PAYMENT',
+  PAID: 'PAID',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED'
+} as const
+export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus]
+
+export const OrderStatusText: Record<OrderStatus, string> = {
+  PENDING_PAYMENT: '待支付',
+  PAID: '已支付',
+  COMPLETED: '已完成',
+  CANCELLED: '已取消'
+}
+
+export const Relation = {
+  SELF: 'SELF',
+  PARENT: 'PARENT',
+  CHILD: 'CHILD',
+  SPOUSE: 'SPOUSE',
+  OTHER: 'OTHER'
+} as const
+export type Relation = (typeof Relation)[keyof typeof Relation]
+
+export const RelationText: Record<Relation, string> = {
+  SELF: '本人',
+  PARENT: '父母',
+  CHILD: '子女',
+  SPOUSE: '配偶',
+  OTHER: '其他'
+}
+export const RelationList: Array<{ key: Relation; label: string }> = [
+  { key: Relation.SELF,   label: RelationText.SELF },
+  { key: Relation.PARENT, label: RelationText.PARENT },
+  { key: Relation.CHILD,  label: RelationText.CHILD },
+  { key: Relation.SPOUSE, label: RelationText.SPOUSE },
+  { key: Relation.OTHER,  label: RelationText.OTHER }
+]
+
+export const Period = {
+  MORNING: 'MORNING',
+  AFTERNOON: 'AFTERNOON',
+  EVENING: 'EVENING'
+} as const
+export const PeriodText: Record<keyof typeof Period, string> = {
+  MORNING: '上午',
+  AFTERNOON: '下午',
+  EVENING: '晚间'
+}
+
+export const UserType = {
+  PATIENT: 'PATIENT',
+  ADMIN: 'ADMIN'
+} as const
+export type UserType = (typeof UserType)[keyof typeof UserType]
+
+// ============== 认证 ==============
+export interface LoginResponse {
+  accessToken: string
+  tokenType: 'Bearer'
+  userId: number
+  nickname: string
+  userType: UserType
+}
+
+export interface LoginUser {
+  userId: number
+  userType: UserType
+  jti: string
+}
+
+export interface AppRegisterRequest {
+  phone: string
+  password: string
+  nickname: string
+}
+
+export interface AppLoginRequest {
+  phone: string
+  password: string
+}
+
+export interface AdminLoginRequest {
+  username: string
+  password: string
+}
+
+// ============== 科室 / 医生 / 号源 ==============
+export interface DepartmentTreeNode {
+  id: number
+  code: string
+  name: string
+  description: string
+  sortNo: number
+  children: DepartmentTreeNode[]
+}
+
+export interface DoctorLevelBrief {
+  levelId: number
+  code: string
+  name: string
+  feeFen: number
+}
+
+export interface DoctorDetailResponse {
+  id: number
+  name: string
+  departmentId: number
+  departmentName: string
+  title: string
+  introduction: string
+  levels: DoctorLevelBrief[]
+}
+
+export interface SlotSummary {
+  slotId: number
+  doctorId: number
+  doctorName: string
+  departmentId: number
+  levelId: number
+  levelName: string
+  /** 挂号费用，单位：分 */
+  feeFen: number
+  /** yyyy-MM-dd */
+  visitDate: string
+  /** HH:mm:ss */
+  startTime: string
+  /** HH:mm:ss */
+  endTime: string
+  remainingQuota: number
+}
+
+// ============== 就诊人 ==============
+export interface PatientContact {
+  id: number
+  userId: number
+  name: string
+  phone: string
+  relation: Relation
+  /** yyyy-MM-dd HH:mm:ss（部分后端版本可能是 ISO 格式）*/
+  createdAt: string
+  updatedAt?: string
+}
+
+export interface ContactRequest {
+  name: string
+  phone: string
+  /** 不传默认 SELF */
+  relation?: Relation
+}
+
+// ============== 订单 ==============
+export interface CreateOrderRequest {
+  /** 号源 ID：号源查询返回的 slotId */
+  slotId: number
+  /** 就诊人 ID：就诊人列表返回的 id */
+  contactId: number
+  /** 幂等键：客户端生成 UUID（调用 Format.uuid()）*/
+  idempotencyKey: string
+}
+
+export interface OrderDetail {
+  id: number
+  orderNo: string
+  status: OrderStatus
+  slotId: number
+  doctorId: number
+  doctorName: string
+  departmentId: number
+  departmentName: string
+  levelId: number
+  levelName: string
+  visitDate: string
+  startTime: string
+  endTime: string
+  /** 单位分 */
+  amountFen: number
+  contactName: string
+  contactPhone: string
+  expiredAt?: string
+  paidAt?: string
+  cancelledAt?: string
+  cancelReason?: 'USER' | 'ADMIN' | string
+  createdAt: string
+}
+
+export interface DailyCount {
+  date: string
+  count: number
+}
+
+export interface DepartmentCount {
+  name: string
+  count: number
+}
+
+// ============== 后台管理（仅管理端使用，鸿蒙端做预留）==============
+export interface AdminUserRequest {
+  phone: string
+  nickname: string
+  /** 新增必填，编辑留空不改 */
+  password?: string
+}
+
+export interface AdminUserResponse {
+  id: number
+  phone: string
+  nickname: string
+  userType: UserType
+  status: 0 | 1
+  createdAt: string
+  lastLoginAt?: string
+}
+
+export interface DoctorScheduleRuleBrief {
+  id: number
+  ruleName: string
+  scheduleOverview: string[]
+}
+
+export interface AdminDoctorRequest {
+  name: string
+  departmentId: number
+  title?: string
+  introduction?: string
+  levelIds?: number[]
+  scheduleRuleIds?: number[]
+}
+
+export interface AdminDoctorResponse {
+  id: number
+  name: string
+  departmentId: number
+  departmentName: string
+  title: string
+  introduction: string
+  enabled: 0 | 1
+  levelIds: number[]
+  scheduleRules: DoctorScheduleRuleBrief[]
+}
+
+export interface Department {
+  id: number
+  code: string
+  name: string
+  /** 上级科室 ID，0 表示一级科室 */
+  parentId: number
+  departmentType: string
+  description: string
+  sortNo: number
+  enabled: 0 | 1
+  /** 响应展示字段，新增/编辑时不传 */
+  parentName?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface ScheduleRule {
+  id: number
+  levelId: number
+  ruleName: string
+  /** 7 位二进制位掩码，21 = 10101 = 周一/三/五 */
+  weekdayMask: number
+  period: 'MORNING' | 'AFTERNOON' | 'EVENING' | string
+  /** 时段 JSON：[{"start":"08:00","end":"08:30","quota":4}] */
+  slotsJson: string
+  effectiveStart: string
+  effectiveEnd?: string
+  enabled: 0 | 1
+  /** 响应展示字段 */
+  ruleCode?: string
+  scheduleOverview?: string[]
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface RegistrationLevel {
+  id: number
+  code: string
+  name: string
+  /** 单位分 */
+  feeFen: number
+  defaultQuota: number
+  sortNo: number
+  enabled: 0 | 1
+  createdAt?: string
+  updatedAt?: string
+}
+
+// ============== 鸿蒙 UI 侧常用小类型 ==============
+/** 通用选项（用于下拉/单选弹框）*/
+export interface OptionItem<T = string | number> {
+  label: string
+  value: T
+}
+
+/** Banner / 快捷入口 / 推荐医生 等卡片的通用展示类型 */
+export interface BannerItem {
+  id: string | number
+  title?: string
+  image: string
+  linkUrl?: string
+}
+export interface QuickEntryItem {
+  key: 'book' | 'orders' | 'contacts' | 'ai' | string
+  label: string
+  iconFont: string        // 预留 iconfont 名；目前用符号占位渲染圆形卡片
+  route: string
+  routeParams?: Record<string, Object>
+}

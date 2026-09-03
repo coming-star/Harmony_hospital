@@ -1,8 +1,37 @@
 {
   "float": [
-    {
-      "name": "page_text_font_size",
-      "value": "50fp"
-    }
+    { "name": "page_text_font_size", "value": "16fp" },
+
+    { "name": "fs_10", "value": "10fp" },
+    { "name": "fs_12", "value": "12fp" },
+    { "name": "fs_14", "value": "14fp" },
+    { "name": "fs_16", "value": "16fp" },
+    { "name": "fs_18", "value": "18fp" },
+    { "name": "fs_20", "value": "20fp" },
+    { "name": "fs_24", "value": "24fp" },
+    { "name": "fs_28", "value": "28fp" },
+    { "name": "fs_32", "value": "32fp" },
+
+    { "name": "sp_4",  "value": "4vp" },
+    { "name": "sp_8",  "value": "8vp" },
+    { "name": "sp_12", "value": "12vp" },
+    { "name": "sp_16", "value": "16vp" },
+    { "name": "sp_20", "value": "20vp" },
+    { "name": "sp_24", "value": "24vp" },
+    { "name": "sp_32", "value": "32vp" },
+
+    { "name": "radius_sm",  "value": "8vp" },
+    { "name": "radius_md",  "value": "12vp" },
+    { "name": "radius_lg",  "value": "16vp" },
+    { "name": "radius_pill","value": "9999vp" },
+
+    { "name": "shadow_card",   "value": "2vp" },
+    { "name": "shadow_modal",  "value": "8vp" },
+
+    { "name": "app_bar_height",   "value": "56vp" },
+    { "name": "tab_bar_height",   "value": "60vp" },
+    { "name": "btn_height_sm",    "value": "36vp" },
+    { "name": "btn_height_md",    "value": "44vp" },
+    { "name": "btn_height_lg",    "value": "52vp" }
   ]
 }

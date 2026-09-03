@@ -1,16 +1,51 @@
 {
   "string": [
-    {
-      "name": "module_desc",
-      "value": "module description"
-    },
-    {
-      "name": "EntryAbility_desc",
-      "value": "description"
-    },
-    {
-      "name": "EntryAbility_label",
-      "value": "label"
-    }
+    { "name": "module_desc",       "value": "东软云医院患者端鸿蒙 App" },
+    { "name": "EntryAbility_desc", "value": "应用主入口" },
+    { "name": "EntryAbility_label","value": "东软云医院" },
+
+    { "name": "app_name", "value": "东软云医院" },
+    { "name": "city",     "value": "南昌" },
+    { "name": "search_placeholder", "value": "搜索科室 / 医生 / 症状" },
+
+    { "name": "tab_home",        "value": "首页" },
+    { "name": "tab_appointment", "value": "预约" },
+    { "name": "tab_ai",          "value": "AI" },
+    { "name": "tab_mine",        "value": "我的" },
+
+    { "name": "quick_book",      "value": "立即预约" },
+    { "name": "quick_order",     "value": "我的挂号" },
+    { "name": "quick_contact",   "value": "就诊人" },
+    { "name": "quick_ai",        "value": "AI导诊" },
+    { "name": "section_dept",    "value": "推荐科室" },
+    { "name": "section_doctor",  "value": "推荐医生" },
+
+    { "name": "login",           "value": "登录" },
+    { "name": "register",        "value": "注册" },
+    { "name": "logout",          "value": "退出登录" },
+    { "name": "go_register",     "value": "还没账号？去注册" },
+    { "name": "go_login",        "value": "已有账号？去登录" },
+    { "name": "phone",           "value": "手机号" },
+    { "name": "phone_hint",      "value": "请输入 11 位手机号" },
+    { "name": "password",        "value": "密码" },
+    { "name": "password_hint",   "value": "请输入登录密码（8-64位）" },
+    { "name": "password_confirm","value": "确认密码" },
+    { "name": "nickname",        "value": "昵称" },
+    { "name": "nickname_hint",   "value": "请输入昵称" },
+    { "name": "login_success",   "value": "登录成功" },
+    { "name": "register_success","value": "注册成功" },
+
+    { "name": "loading",         "value": "加载中…" },
+    { "name": "retry",           "value": "点击重试" },
+    { "name": "empty",           "value": "暂无数据" },
+    { "name": "ok",              "value": "确定" },
+    { "name": "cancel",          "value": "取消" },
+    { "name": "confirm_title",   "value": "温馨提示" },
+    { "name": "logout_confirm",  "value": "确定要退出登录吗？" },
+
+    { "name": "status_pending",  "value": "待支付" },
+    { "name": "status_paid",     "value": "已支付" },
+    { "name": "status_completed","value": "已完成" },
+    { "name": "status_cancelled","value": "已取消" }
   ]
 }

@@ -1,5 +1,18 @@
 {
   "src": [
-    "pages/Index"
+    "pages/Index",
+    "pages/auth/Login",
+    "pages/auth/Register",
+    "pages/appointment/AppointmentIndex",
+    "pages/appointment/DepartmentSelect",
+    "pages/appointment/DoctorList",
+    "pages/appointment/ContactSelect",
+    "pages/appointment/OrderConfirm",
+    "pages/appointment/BookingSuccess",
+    "pages/ai/AIChat",
+    "pages/mine/MineIndex",
+    "pages/mine/OrderRecord",
+    "pages/mine/ContactManage",
+    "pages/mine/Settings"
   ]
 }
