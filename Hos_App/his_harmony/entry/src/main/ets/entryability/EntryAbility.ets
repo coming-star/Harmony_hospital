@@ -10,14 +10,14 @@ export default class EntryAbility extends UIAbility {
   async onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): Promise<void> {
     try {
       this.context.getApplicationContext().setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET);
-    } catch(err: Error) {
+    } catch (err) {
       hilog.error(DOMAIN, 'testTag', 'Failed to set colorMode. Cause: %{public}s', JSON.stringify(err));
     }
     try {
       // 用户级 Preferences（与页面 Context 相同），这里直接用 this.context
-      await userStore.initWithContext(this.context as unknown as Context);
+      await userStore.initWithContext(this.context);
       hilog.info(DOMAIN, 'testTag', '%{public}s', 'UserStore initialized');
-    } catch(err: Error) {
+    } catch (err) {
       hilog.error(DOMAIN, 'testTag', 'UserStore init failed: %{public}s', JSON.stringify(err));
     }
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onCreate');

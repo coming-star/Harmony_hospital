@@ -20,8 +20,8 @@ import { promptAction } from '@kit.ArkUI'
 struct OrderConfirm {
   @State slotId: number = 0
   @State contactId: number = 0
-  @State slot?: SlotSummary
-  @State contact?: PatientContact
+  @State slot: SlotSummary | undefined = undefined
+  @State contact: PatientContact | undefined = undefined
   @State paying: boolean = false
 
   async aboutToAppear(): Promise<void> {
@@ -47,7 +47,7 @@ struct OrderConfirm {
       const paid: OrderDetail = await orderApi.payOrder(created.id)
       // 到预约成功页
       router.replaceUrl({ url: Route.BOOK_SUCCESS, params: { orderId: String(paid.id) } })
-    } catch(e: Error) { /* toast 已弹 */ }
+    } catch (e) { /* toast 已弹 */ }
     finally { this.paying = false }
   }
 
@@ -58,13 +58,13 @@ struct OrderConfirm {
       Column() {
         Text('东软云医院').fontSize(18).fontWeight(700).alignSelf(ItemAlign.Start)
         if (this.slot) {
-          Row() { AvatarIcon({name:this.slot.doctorName,size:52}).margin({right:12})
+          Row() { AvatarIcon({name:this.slot.doctorName,iconSize:52}).margin({right:12})
             Column() {
               Text(this.slot.doctorName).fontSize(16).fontWeight(600)
               Text(`${this.slot.levelName} · ${Format.date(this.slot.visitDate)} ${Format.time(this.slot.startTime)}-${Format.time(this.slot.endTime)}`)
                 .fontSize(13).fontColor($r('app.color.text_secondary')).margin({top:4})
             }.layoutWeight(1).alignItems(HorizontalAlign.Start)
-            FeeTag({ fen: this.slot.feeFen, type:'secondary', size:'lg' })
+            FeeTag({ fen: this.slot.feeFen, type:'secondary', iconSize:'lg' })
           }.margin({top:12})
         } else { Text('加载号源信息…').fontColor($r('app.color.text_hint')).margin({top:12}) }
       }.width('92%').padding(16).margin({top:16})
@@ -74,7 +74,7 @@ struct OrderConfirm {
       Column() {
         Text('就诊人').fontSize(16).fontWeight(700).alignSelf(ItemAlign.Start)
         if (this.contact) {
-          Row() { AvatarIcon({name:this.contact.name,size:44}).margin({right:12})
+          Row() { AvatarIcon({name:this.contact.name,iconSize:44}).margin({right:12})
             Column() {
               Text(this.contact.name).fontSize(15).fontWeight(600)
               Text(`${Format.maskPhone(this.contact.phone)} · ${this.contact.relation}`)
@@ -90,9 +90,9 @@ struct OrderConfirm {
       Row() {
         Column() {
           Text('支付金额').fontSize(12).fontColor($r('app.color.text_hint'))
-          if (this.slot) { FeeTag({ fen: this.slot.feeFen, type:'danger', size:'lg' }).margin({top:4}) }
+          if (this.slot) { FeeTag({ fen: this.slot.feeFen, type:'danger', iconSize:'lg' }).margin({top:4}) }
         }.alignItems(HorizontalAlign.Start).layoutWeight(1)
-        PrimaryButton({ label:'立即支付', enabled:!this.paying, onClick:() => this.pay() }).width(180)
+        PrimaryButton({ label:'立即支付', isEnabled:!this.paying, onTap:() => this.pay() }).width(180)
       }
       .width('100%').padding(16)
       .backgroundColor($r('app.color.bg_card'))

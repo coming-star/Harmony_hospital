@@ -1,6 +1,15 @@
 /**
  * 全局格式化工具：金额（分→元）、日期、手机号打码、身份证打码等。
  */
+
+/** 未来 7 天日期项（next7Days 返回值元素）*/
+export interface DayItem {
+  iso: string
+  mmdd: string
+  weekday: string
+  isToday: boolean
+}
+
 export class Format {
   /** 金额：后端返回的「分」→ 前端展示的「元」，保留 0/1/2 位小数，带 ¥ 前缀。 */
   static yuan(fen: number | string | null | undefined, withPrefix: boolean = true): string {
@@ -64,8 +73,8 @@ export class Format {
   }
 
   /** 未来 7 天（含今天）日期数组：[{ iso, mmdd, weekday }]，用于医生列表页顶部 7 天切换条 */
-  static next7Days(offsetDays: number = 0): Array<{ iso: string; mmdd: string; weekday: string; isToday: boolean }> {
-    const result: Array<{ iso: string; mmdd: string; weekday: string; isToday: boolean }> = []
+  static next7Days(offsetDays: number = 0): DayItem[] {
+    const result: DayItem[] = []
     const today: Date = new Date()
     today.setHours(0, 0, 0, 0)
     for (let i: number = offsetDays; i < offsetDays + 7; i++) {

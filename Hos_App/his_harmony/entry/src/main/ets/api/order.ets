@@ -32,7 +32,11 @@ export function cancelOrder(id: number | string): Promise<OrderDetail> {
 }
 /** 我的挂号记录（分页）*/
 export function listMyOrders(q: OrderListQuery): Promise<PageResult<OrderDetail>> {
-  return get<PageResult<OrderDetail>>('/api/orders', q)
+  const query: Map<string, string> = new Map<string, string>()
+  if (q.status) query.set('status', q.status)
+  if (q.page) query.set('page', String(q.page))
+  if (q.size) query.set('size', String(q.size))
+  return get<PageResult<OrderDetail>>('/api/orders', query)
 }
 /** 订单详情 */
 export function getOrder(id: number | string): Promise<OrderDetail> {
@@ -41,7 +45,15 @@ export function getOrder(id: number | string): Promise<OrderDetail> {
 
 /* ------------------- 管理端（可选，鸿蒙端本期不直接用） ------------------- */
 export function listAdminOrders(q: AdminOrderListQuery): Promise<PageResult<OrderDetail>> {
-  return get<PageResult<OrderDetail>>('/api/admin/orders/list', q)
+  const query: Map<string, string> = new Map<string, string>()
+  if (q.orderNo) query.set('orderNo', q.orderNo)
+  if (q.patientKeyword) query.set('patientKeyword', q.patientKeyword)
+  if (q.doctorName) query.set('doctorName', q.doctorName)
+  if (q.visitDate) query.set('visitDate', q.visitDate)
+  if (q.status) query.set('status', q.status)
+  if (q.page) query.set('page', String(q.page))
+  if (q.size) query.set('size', String(q.size))
+  return get<PageResult<OrderDetail>>('/api/admin/orders/list', query)
 }
 /** 管理员取消（cancelReason=ADMIN）*/
 export function adminCancelOrder(id: number | string): Promise<OrderDetail> {

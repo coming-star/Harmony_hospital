@@ -16,6 +16,11 @@ interface RowItem {
   onClick?: () => void
 }
 
+interface GroupItem {
+  key: string
+  label: string
+}
+
 @Entry
 @Component
 struct Settings {
@@ -28,7 +33,7 @@ struct Settings {
     { key:'contact', label:'联系客服',      group:'about',   desc:'400-000-0000' },
     { key:'logout',  label:'退出登录',      group:'account', danger:true }
   ]
-  private groups: Array<{key: string, label: string}> = [
+  private groups: GroupItem[] = [
     { key:'general', label:'通用' },
     { key:'about',   label:'关于' },
     { key:'account', label:'账号' }
@@ -69,18 +74,21 @@ struct Settings {
     }.width('100%')
   }
 
+  @Builder logoutDialog() {
+    ConfirmDialog({
+      message: '确定要退出登录吗？',
+      danger: true,
+      onConfirm: () => { this.logoutShow = false; userStore.logout() },
+      onCancel: () => { this.logoutShow = false }
+    })
+  }
+
   build() {
     Column() {
       AppBar({ title: '设置' })
-      ForEach(this.groups, g => this.GroupCard(g.key, g.label))
+      ForEach(this.groups, (g: GroupItem) => this.GroupCard(g.key, g.label))
     }
     .width('100%').height('100%').backgroundColor($r('app.color.bg_page'))
-    .bindSheet($$$this.logoutShow,
-      ConfirmDialog({
-        show: $$$this.logoutShow,
-        message: '确定要退出登录吗？',
-        danger: true,
-        onConfirm: () => { userStore.logout() }
-      }), { height: 280, preferType: SheetType.CENTER, showClose: false, dragBar: true })
+    .bindSheet($$this.logoutShow, this.logoutDialog(), { height: 280, preferType: SheetType.CENTER, showClose: false, dragBar: true })
   }
 }

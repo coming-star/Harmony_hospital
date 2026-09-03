@@ -6,6 +6,7 @@
 import router from '@ohos.router'
 import type { SlotSummary } from '../../types'
 import { Format } from '../../utils/format'
+import type { DayItem } from '../../utils/format'
 import { Route } from '../../utils/theme'
 import { AppBar } from '../../components/AppBar'
 import * as slotApi from '../../api/slot'
@@ -15,14 +16,20 @@ import { promptAction } from '@kit.ArkUI'
 
 interface DoctorDayView { date: string; mmdd: string; weekday: string; isToday: boolean }
 
+interface DoctorGroup {
+  doctorId: number
+  doctorName: string
+  items: SlotSummary[]
+}
+
 @Entry
 @Component
 struct DoctorList {
   @State departmentId: number = 0
   @State visitDate: string = Format.next7Days(0)[0].iso
-  @State days: DoctorDayView[] = Format.next7Days(0).map(d => ({
-    date: d.iso, mmdd: d.mmdd, weekday: d.weekday, isToday: d.isToday
-  }))
+  @State days: DoctorDayView[] = Format.next7Days(0).map((d: DayItem): DoctorDayView => {
+    return { date: d.iso, mmdd: d.mmdd, weekday: d.weekday, isToday: d.isToday }
+  })
   @State slots: SlotSummary[] = []
 
   async aboutToAppear(): Promise<void> {
@@ -35,13 +42,12 @@ struct DoctorList {
   async loadSlots(): Promise<void> {
     if (!this.departmentId) return
     try { this.slots = await slotApi.listSlots({ departmentId: this.departmentId, date: this.visitDate }) }
-    catch(_: Error) {}
+    catch (_) {}
   }
-  private doctors(): Array<{doctorId:number, doctorName:string, items: SlotSummary[]}> {
-    const m: Map<number, {doctorId:number, doctorName:string, items: SlotSummary[]}> =
-      new Map<number, {doctorId:number, doctorName:string, items: SlotSummary[]}>()
+  private doctors(): DoctorGroup[] {
+    const m: Map<number, DoctorGroup> = new Map<number, DoctorGroup>()
     this.slots.forEach((s: SlotSummary) => {
-      let g: {doctorId:number, doctorName:string, items: SlotSummary[]} | undefined = m.get(s.doctorId)
+      let g: DoctorGroup | undefined = m.get(s.doctorId)
       if (!g) { g = { doctorId: s.doctorId, doctorName: s.doctorName, items: [] }; m.set(s.doctorId, g) }
       g.items.push(s)
     })
@@ -84,11 +90,11 @@ struct DoctorList {
             .padding({top:40}) }.layoutWeight(1)
       } else {
         List() {
-          ForEach(this.doctors(), (g: {doctorId:number, doctorName:string, items: SlotSummary[]}) => {
+          ForEach(this.doctors(), (g: DoctorGroup) => {
             ListItem() {
               Column() {
                 Row() {
-                  AvatarIcon({ name: g.doctorName, size: 56 })
+                  AvatarIcon({ name: g.doctorName, iconSize: 56 })
                   Column() {
                     Text(g.doctorName).fontSize(17).fontWeight(700)
                       .fontColor($r('app.color.text_primary'))
@@ -103,7 +109,7 @@ struct DoctorList {
                         .fontSize(13)
                         .fontColor(s.remainingQuota <= 0 ? $r('app.color.disabled') : $r('app.color.text_primary'))
                       Row() {
-                        FeeTag({ fen: s.feeFen, size: 'sm' })
+                        FeeTag({ fen: s.feeFen, iconSize: 'sm' })
                         Text(`余${s.remainingQuota}`)
                           .fontSize(11).fontColor(s.remainingQuota <= 0 ? $r('app.color.disabled') : $r('app.color.text_hint'))
                           .margin({ left: 8 })
@@ -116,14 +122,14 @@ struct DoctorList {
                     .borderColor(s.remainingQuota <= 0 ? $r('app.color.disabled_light') : $r('app.color.primary'))
                     .backgroundColor(s.remainingQuota <= 0 ? $r('app.color.disabled_light') : $r('app.color.bg_card'))
                     .onClick(() => this.pickSlot(s))
-                  }, s => String(s.slotId))
+                  }, (s: SlotSummary) => String(s.slotId))
                 }.padding({ left: 18, right: 18, bottom: 18 })
               }
               .width('92%').margin({ top: 14, bottom: 4 }).alignSelf(ItemAlign.Center)
               .backgroundColor($r('app.color.bg_card'))
               .borderRadius($r('app.float.radius_lg'))
             }.width('100%')
-          }, g => String(g.doctorId))
+          }, (g: DoctorGroup) => String(g.doctorId))
         }.layoutWeight(1).width('100%')
       }
     }.width('100%').height('100%').backgroundColor($r('app.color.bg_page'))

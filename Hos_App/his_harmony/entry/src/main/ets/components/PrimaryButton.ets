@@ -4,7 +4,7 @@
  * - 默认占满父容器 width='100%'
  * - 支持三种变体：primary 蓝（默认）/ danger 红 / light 蓝底白边蓝字
  *
- * 用法：PrimaryButton({ label:'登录', onClick:() => submit() })
+ * 用法：PrimaryButton({ label:'登录', onTap:() => submit() })
  */
 type Variant = 'primary' | 'danger' | 'light'
 
@@ -12,9 +12,9 @@ type Variant = 'primary' | 'danger' | 'light'
 export struct PrimaryButton {
   @Prop label: string = '按钮'
   @Prop variant: Variant = 'primary'
-  @Prop enabled: boolean = true
-  @Prop height: number | string = 52
-  @Link? onClick?: () => void
+  @Prop isEnabled: boolean = true
+  @Prop btnHeight: number | string = 52
+  onTap?: () => void
 
   private bg(): ResourceColor {
     switch (this.variant) {
@@ -30,7 +30,7 @@ export struct PrimaryButton {
       default:       return $r('app.color.text_white')
     }
   }
-  private border(): ResourceColor {
+  private getBorderColor(): ResourceColor {
     return this.variant === 'light' ? $r('app.color.primary') : Color.Transparent
   }
 
@@ -39,15 +39,15 @@ export struct PrimaryButton {
       Text(this.label)
         .fontSize($r('app.float.fs_18'))
         .fontWeight(600)
-        .fontColor(this.enabled ? this.fg() : $r('app.color.text_white'))
-        .opacity(this.enabled ? 1.0 : 0.55)
+        .fontColor(this.isEnabled ? this.fg() : $r('app.color.text_white'))
+        .opacity(this.isEnabled ? 1.0 : 0.55)
     }
     .width('100%')
-    .height(this.height)
+    .height(this.btnHeight)
     .justifyContent(FlexAlign.Center)
-    .backgroundColor(this.enabled ? this.bg() : $r('app.color.disabled'))
+    .backgroundColor(this.isEnabled ? this.bg() : $r('app.color.disabled'))
     .borderRadius($r('app.float.radius_lg'))
-    .borderWidth(1).borderColor(this.border())
-    .onClick(() => { if (this.enabled && this.onClick) this.onClick() })
+    .borderWidth(1).borderColor(this.getBorderColor())
+    .onClick(() => { if (this.isEnabled && this.onTap) this.onTap() })
   }
 }

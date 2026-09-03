@@ -43,7 +43,7 @@ struct Register {
       await userStore.setLogin(r)
       promptAction.showToast({ message: '注册成功' })
       router.replaceUrl({ url: Route.HOME })
-    } catch(_: Error) {}
+    } catch (_) {}
     finally { this.loading = false }
   }
 
@@ -52,7 +52,7 @@ struct Register {
       AppBar({ title: '注册' })
       Scroll() {
         Column() {
-          StethoscopeIcon({ size: 108 }).margin({ top: 40, bottom: 24 })
+          StethoscopeIcon({ iconSize: 108 }).margin({ top: 40, bottom: 24 })
           Text('创建账号').fontSize(28).fontWeight(800).fontColor($r('app.color.text_primary')).margin({bottom:8})
           Text('注册后即可在线预约挂号').fontSize(15).fontColor($r('app.color.text_secondary')).margin({bottom:36})
 
@@ -71,13 +71,13 @@ struct Register {
             Text('《隐私政策》').fontSize(13).fontColor($r('app.color.text_blue'))
           }.width('86%').justifyContent(FlexAlign.Start).margin({ top: 20, bottom: 32 })
 
-          PrimaryButton({ label:'注册并登录', enabled:!this.loading, onClick: () => this.submit() })
+          PrimaryButton({ label:'注册并登录', isEnabled:!this.loading, onTap: () => this.submit() })
             .width('86%').margin({ bottom: 16 })
 
           Row() {
             Text('已有账号？').fontSize(14).fontColor($r('app.color.text_hint'))
             Text('去登录').fontSize(14).fontColor($r('app.color.text_blue')).fontWeight(600)
-              .onClick(() => { try { router.replaceUrl({ url: Route.LOGIN }) } catch(_: Error) {} })
+              .onClick(() => { try { router.replaceUrl({ url: Route.LOGIN }) } catch (_) {} })
           }.margin({ top: 8, bottom: 40 })
         }.width('100%').alignItems(HorizontalAlign.Center)
       }.layoutWeight(1).scrollBar(BarState.Off)

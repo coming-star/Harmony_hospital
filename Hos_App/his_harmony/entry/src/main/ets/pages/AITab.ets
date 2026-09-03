@@ -76,12 +76,12 @@ export struct AITab {
       .width('92%').padding(12).margin({top:12, bottom:8})
       .backgroundColor($r('app.color.primary_light'))
       .borderRadius($r('app.float.radius_md'))
-      .onClick(() => { try { router.pushUrl({ url: Route.SETTINGS }) } catch(e: Error) {} })
+      .onClick(() => { try { router.pushUrl({ url: Route.SETTINGS }) } catch (e) {} })
 
       List({ space:0, scroller: this.scroller }) {
-        ForEach(this.list, m => {
+        ForEach(this.list, (m: Msg) => {
           ListItem() { this.Bubble(m) }.width('100%')
-        }, m => m.id)
+        }, (m: Msg) => m.id)
       }.layoutWeight(1).padding({top:8,bottom:8}).scrollBar(BarState.Off)
 
       // 底部输入栏（参考图同款：灰输入框 + 蓝圆角发送按钮）
@@ -96,7 +96,7 @@ export struct AITab {
           .onSubmit(() => this.send())
 
         Stack({alignContent:Alignment.Center}) {
-          Stack() { Blank() }.width(44).height(44).borderRadius(14).backgroundColor($r('app.color.primary'))
+          Column().width(44).height(44).borderRadius(14).backgroundColor($r('app.color.primary'))
           Text('✈').fontSize(22).fontColor($r('app.color.text_white'))
         }
         .margin({left:12})

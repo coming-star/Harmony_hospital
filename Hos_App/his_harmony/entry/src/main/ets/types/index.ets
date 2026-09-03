@@ -23,61 +23,124 @@ export interface ToggleStatusRequest {
 }
 
 // ============== 枚举常量（字符串常量，不要页面里写死字面量）==============
-export const OrderStatus = {
+export type OrderStatus = 'PENDING_PAYMENT' | 'PAID' | 'COMPLETED' | 'CANCELLED'
+
+export interface OrderStatusMap {
+  PENDING_PAYMENT: OrderStatus
+  PAID: OrderStatus
+  COMPLETED: OrderStatus
+  CANCELLED: OrderStatus
+}
+export const OrderStatusValue: OrderStatusMap = {
   PENDING_PAYMENT: 'PENDING_PAYMENT',
   PAID: 'PAID',
   COMPLETED: 'COMPLETED',
   CANCELLED: 'CANCELLED'
-} as const
-export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus]
+}
 
-export const OrderStatusText: Record<OrderStatus, string> = {
+export interface OrderStatusTextMap {
+  PENDING_PAYMENT: string
+  PAID: string
+  COMPLETED: string
+  CANCELLED: string
+}
+export const OrderStatusText: OrderStatusTextMap = {
   PENDING_PAYMENT: '待支付',
   PAID: '已支付',
   COMPLETED: '已完成',
   CANCELLED: '已取消'
 }
 
-export const Relation = {
+export type Relation = 'SELF' | 'PARENT' | 'CHILD' | 'SPOUSE' | 'OTHER'
+
+export interface RelationMap {
+  SELF: Relation
+  PARENT: Relation
+  CHILD: Relation
+  SPOUSE: Relation
+  OTHER: Relation
+}
+export const RelationValue: RelationMap = {
   SELF: 'SELF',
   PARENT: 'PARENT',
   CHILD: 'CHILD',
   SPOUSE: 'SPOUSE',
   OTHER: 'OTHER'
-} as const
-export type Relation = (typeof Relation)[keyof typeof Relation]
+}
 
-export const RelationText: Record<Relation, string> = {
+export interface RelationTextMap {
+  SELF: string
+  PARENT: string
+  CHILD: string
+  SPOUSE: string
+  OTHER: string
+}
+export const RelationText: RelationTextMap = {
   SELF: '本人',
   PARENT: '父母',
   CHILD: '子女',
   SPOUSE: '配偶',
   OTHER: '其他'
 }
-export const RelationList: Array<{ key: Relation; label: string }> = [
-  { key: Relation.SELF,   label: RelationText.SELF },
-  { key: Relation.PARENT, label: RelationText.PARENT },
-  { key: Relation.CHILD,  label: RelationText.CHILD },
-  { key: Relation.SPOUSE, label: RelationText.SPOUSE },
-  { key: Relation.OTHER,  label: RelationText.OTHER }
+
+export interface RelationOption {
+  key: Relation
+  label: string
+}
+export const RelationList: RelationOption[] = [
+  { key: RelationValue.SELF,   label: RelationText.SELF },
+  { key: RelationValue.PARENT, label: RelationText.PARENT },
+  { key: RelationValue.CHILD,  label: RelationText.CHILD },
+  { key: RelationValue.SPOUSE, label: RelationText.SPOUSE },
+  { key: RelationValue.OTHER,  label: RelationText.OTHER }
 ]
 
-export const Period = {
+/** 关系枚举 → 中文文案（替代中括号取值 RelationText[r]）*/
+export function relationText(r: Relation): string {
+  switch (r) {
+    case 'SELF': return '本人'
+    case 'PARENT': return '父母'
+    case 'CHILD': return '子女'
+    case 'SPOUSE': return '配偶'
+    case 'OTHER': return '其他'
+    default: return ''
+  }
+}
+
+export type Period = 'MORNING' | 'AFTERNOON' | 'EVENING'
+
+export interface PeriodMap {
+  MORNING: Period
+  AFTERNOON: Period
+  EVENING: Period
+}
+export const PeriodValue: PeriodMap = {
   MORNING: 'MORNING',
   AFTERNOON: 'AFTERNOON',
   EVENING: 'EVENING'
-} as const
-export const PeriodText: Record<keyof typeof Period, string> = {
+}
+
+export interface PeriodTextMap {
+  MORNING: string
+  AFTERNOON: string
+  EVENING: string
+}
+export const PeriodText: PeriodTextMap = {
   MORNING: '上午',
   AFTERNOON: '下午',
   EVENING: '晚间'
 }
 
-export const UserType = {
+export type UserType = 'PATIENT' | 'ADMIN'
+
+export interface UserTypeMap {
+  PATIENT: UserType
+  ADMIN: UserType
+}
+export const UserTypeValue: UserTypeMap = {
   PATIENT: 'PATIENT',
   ADMIN: 'ADMIN'
-} as const
-export type UserType = (typeof UserType)[keyof typeof UserType]
+}
 
 // ============== 认证 ==============
 export interface LoginResponse {

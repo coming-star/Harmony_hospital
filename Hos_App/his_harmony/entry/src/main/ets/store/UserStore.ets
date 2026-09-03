@@ -45,7 +45,7 @@ export class UserStore {
       // 但 Store 单例没有 Context 时，改用页面 Context 调用 init(context) 版本。
       // 这里提供一个"空 init"保证不抛错，让页面侧在 aboutToAppear 调用 init(ctx)。
       this.inited = true
-    } catch(_: Error) { /* ignore */ }
+    } catch (_) { /* ignore */ }
   }
 
   /** 页面侧初始化（带 Context）*/
@@ -89,7 +89,7 @@ export class UserStore {
     try {
       if (this._userType === 'ADMIN') await authApi.adminLogout()
       else if (this._token)     await authApi.logoutPatient()
-    } catch(_: Error) { /* 忽略网络错误 */ }
+    } catch (_) { /* 忽略网络错误 */ }
     this.logoutSync()
   }
 
@@ -108,7 +108,7 @@ export class UserStore {
     }
     try {
       router.replaceUrl({ url: Route.LOGIN })
-    } catch(_: Error) { /* ignore */ }
+    } catch (_) { /* ignore */ }
   }
 }
 

@@ -16,8 +16,8 @@ export struct AppBar {
   @Prop title: string = ''
   @Prop hideBack: boolean = false
   /** 右侧图标（简单做法用字符串占位，如 ⚙️ / 🔍 / 🩺；正式版替换 SymbolGlyph 或 PNG）*/
-  @Prop rightIcon?: string
-  @Link? onRightClick?: () => void
+  @Prop rightIcon: string = ''
+  onRightClick?: () => void
 
   build() {
     Row() {
@@ -25,7 +25,7 @@ export struct AppBar {
         Text('‹').fontSize(32).fontColor($r('app.color.text_white')).fontWeight(300)
           .width(40).height(40).textAlign(TextAlign.Center)
           .margin({ left: $r('app.float.sp_4') })
-          .onClick(() => { try { router.back() } catch(_: Error) {} })
+          .onClick(() => { try { router.back() } catch (_) {} })
       } else {
         Blank().width(40).height(40)
       }

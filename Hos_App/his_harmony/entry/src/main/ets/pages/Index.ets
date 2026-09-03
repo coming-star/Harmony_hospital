@@ -12,26 +12,41 @@ import { AppointmentTab } from './AppointmentTab'
 import { AITab } from './AITab'
 import { MineTab } from './MineTab'
 
+interface TabIconMap {
+  home: string[]
+  appointment: string[]
+  ai: string[]
+  mine: string[]
+}
+
 @Entry
 @Component
 struct Index {
   @State currentIndex: number = TAB_INDEX.home
   private tabKeys: TabKey[] = [...TAB_KEYS]
 
-  /** 根据 Tab key 拿选中色（首页/我的=主色；预约=蓝；AI=紫） */
   private activeColor(key: TabKey): ResourceColor {
-    return Theme.TabActiveColor[key]
+    return $r('app.color.primary')
   }
 
-  /** Tab 图标：用 emoji 占位（正式版替换为 iconfont 或 SVG/png；或直接用内置 symbolGlyph）*/
-  private iconFor(key: TabKey, active: boolean): string {
-    const map: Record<TabKey, [string, string]> = {
-      home: ['🏠', '🏡'],
-      appointment: ['📅', '🗓️'],
-      ai: ['🤖', '🧠'],
-      mine: ['👤', '🙂']
+  private labelFor(key: TabKey): string {
+    switch (key) {
+      case 'home': return '首页'
+      case 'appointment': return '预约'
+      case 'ai': return 'AI'
+      case 'mine': return '我的'
+      default: return ''
     }
-    return map[key][active ? 1 : 0]
+  }
+
+  private iconFor(key: TabKey, active: boolean): string {
+    switch (key) {
+      case 'home': return active ? '🏡' : '🏠'
+      case 'appointment': return active ? '🗓️' : '📅'
+      case 'ai': return active ? '🧠' : '🤖'
+      case 'mine': return active ? '🙂' : '👤'
+      default: return '🏠'
+    }
   }
 
   @Builder TabBuilder(key: TabKey, index: number) {
@@ -39,7 +54,7 @@ struct Index {
       Text(this.iconFor(key, this.currentIndex === index))
         .fontSize($r('app.float.fs_24'))
         .margin({ bottom: 2 })
-      Text(TAB_LABELS[key])
+      Text(this.labelFor(key))
         .fontSize($r('app.float.fs_12'))
         .fontColor(this.currentIndex === index ? this.activeColor(key) : $r('app.color.text_hint'))
     }

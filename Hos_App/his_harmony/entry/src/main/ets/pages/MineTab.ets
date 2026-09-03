@@ -6,10 +6,10 @@
  * 4. 红色"退出登录"按钮（弹 ConfirmDialog 二次确认）
  */
 import router from '@ohos.router'
-import userStore from '../../store/UserStore'
-import { AvatarIcon } from '../../components/AvatarIcon'
-import { ConfirmDialog } from '../../components/ConfirmDialog'
-import { Route } from '../../utils/theme'
+import userStore from '../store/UserStore'
+import { AvatarIcon } from '../components/AvatarIcon'
+import { ConfirmDialog } from '../components/ConfirmDialog'
+import { Route } from '../utils/theme'
 
 interface EntryRow {
   key: string
@@ -39,7 +39,7 @@ export struct MineTab {
 
   private click(r: EntryRow): void {
     if (r.disabled || !r.route) return
-    try { router.pushUrl({ url: r.route }) } catch(_: Error) {}
+    try { router.pushUrl({ url: r.route }) } catch (_) {}
   }
 
   @Builder BlueTopHeader() {
@@ -49,7 +49,7 @@ export struct MineTab {
         .backgroundColor($r('app.color.primary'))
 
       Row() {
-        AvatarIcon({ name: userStore.nickname || '健康用户', size: 72 })
+        AvatarIcon({ name: userStore.nickname || '健康用户', iconSize: 72 })
         Column() {
           Text(userStore.nickname ? userStore.nickname : '健康用户')
             .fontSize(22).fontWeight(800).fontColor($r('app.color.text_white'))
@@ -59,7 +59,7 @@ export struct MineTab {
           } else {
             Text('未登录，点击这里登录').fontSize(13).fontColor('#CCFFFFFF')
               .margin({top:4}).padding(4)
-              .onClick(() => { try { router.pushUrl({ url: Route.LOGIN }) } catch(_: Error) {} })
+              .onClick(() => { try { router.pushUrl({ url: Route.LOGIN }) } catch (_) {} })
           }
         }.margin({ left: 16 }).layoutWeight(1).alignItems(HorizontalAlign.Start)
       }
@@ -73,7 +73,7 @@ export struct MineTab {
     Row() {
       // 图标方框（参考图：左灰方框）
       Stack() {
-        Stack() { Blank() }.width(44).height(44).borderRadius(10).backgroundColor($r('app.color.primary_light'))
+        Column().width(44).height(44).borderRadius(10).backgroundColor($r('app.color.primary_light'))
         Text(r.glyph).fontSize(22)
       }.margin({ right: 14 })
 
@@ -104,7 +104,7 @@ export struct MineTab {
           if (idx < this.systemInfos.length - 1) {
             Divider().color($r('app.color.divider')).margin({ left: 16 })
           }
-        }, (it) => it.key)
+        }, (it: InfoRow) => it.key)
       }
       .width('92%')
       .backgroundColor($r('app.color.bg_card')).borderRadius(16)
@@ -113,19 +113,28 @@ export struct MineTab {
     .width('100%')
   }
 
+  @Builder logoutDialog() {
+    ConfirmDialog({
+      message: '确定要退出登录吗？',
+      danger: true,
+      onConfirm: () => { this.logoutShow = false; userStore.logout() },
+      onCancel: () => { this.logoutShow = false }
+    })
+  }
+
   build() {
     Column() {
       this.BlueTopHeader()
 
       // 3 张入口卡
-      ForEach(this.entries, it => {
+      ForEach(this.entries, (it: EntryRow) => {
         this.EntryCard(it)
-      }, (it) => it.key)
+      }, (it: EntryRow) => it.key)
 
       this.InfoGroup()
 
       // 退出登录（红色大圆角按钮，白边红字，参考图同款）
-      Button('退出登录', ButtonType.Normal)
+      Button('退出登录', { type: ButtonType.Normal })
         .width('92%').height(50)
         .margin({ top: 36, bottom: 40 })
         .backgroundColor($r('app.color.danger_light'))
@@ -136,12 +145,6 @@ export struct MineTab {
     }
     .width('100%').height('100%')
     .backgroundColor($r('app.color.bg_page'))
-    .bindSheet($$$this.logoutShow,
-      ConfirmDialog({
-        show: $$$this.logoutShow,
-        message: '确定要退出登录吗？',
-        danger: true,
-        onConfirm: () => { userStore.logout() }
-      }), { height: 280, preferType: SheetType.CENTER, showClose: false, dragBar: true })
+    .bindSheet($$this.logoutShow, this.logoutDialog(), { height: 280, preferType: SheetType.CENTER, showClose: false, dragBar: true })
   }
 }

@@ -2,7 +2,8 @@
  * 【就诊人管理】交付负责人：成员 D。
  * 列表 + 编辑图标 + 删除图标 + 右下角 FAB 新增。
  */
-import type { PatientContact, ContactRequest, Relation, RelationText, RelationList } from '../../types'
+import type { PatientContact, ContactRequest, RelationOption, Relation } from '../../types'
+import { RelationValue, RelationList, relationText } from '../../types'
 import * as contactApi from '../../api/contact'
 import { AvatarIcon } from '../../components/AvatarIcon'
 import { EmptyState } from '../../components/EmptyState'
@@ -20,22 +21,22 @@ struct ContactManage {
   @State editId: number = 0
   @State fName: string = ''
   @State fPhone: string = ''
-  @State fRelation: Relation = Relation.SELF
+  @State fRelation: Relation = RelationValue.SELF
   @State deleteShow: boolean = false
-  @State deleteTarget?: PatientContact
+  @State deleteTarget: PatientContact | undefined = undefined
   @State deleteLoading: boolean = false
 
   async aboutToAppear(): Promise<void> { await this.reload() }
 
   async reload(): Promise<void> {
     this.loading = true
-    try { this.list = await contactApi.listContacts() } catch(_: Error) {}
+    try { this.list = await contactApi.listContacts() } catch (_) {}
     finally { this.loading = false }
   }
 
   openAdd(): void {
     this.editId = 0
-    this.fName = ''; this.fPhone = ''; this.fRelation = Relation.SELF
+    this.fName = ''; this.fPhone = ''; this.fRelation = RelationValue.SELF
     this.addSheet = true
   }
   openEdit(c: PatientContact): void {
@@ -52,7 +53,7 @@ struct ContactManage {
       else           await contactApi.createContact(body)
       this.addSheet = false
       await this.reload()
-    } catch(_: Error) {}
+    } catch (_) {}
   }
   askDelete(c: PatientContact): void { this.deleteTarget = c; this.deleteShow = true }
   async confirmDelete(): Promise<void> {
@@ -62,13 +63,25 @@ struct ContactManage {
       await contactApi.deleteContact(this.deleteTarget.id)
       this.deleteShow = false
       await this.reload()
-    } catch(_: Error) {}
+    } catch (_) {}
     finally { this.deleteLoading = false }
   }
 
+  @Builder deleteDialog() {
+    ConfirmDialog({
+      title: '删除就诊人',
+      message: this.deleteTarget ? `确认删除就诊人「${this.deleteTarget.name}」？若该就诊人存在未终态订单将无法删除。` : '确认删除该就诊人？',
+      danger: true,
+      confirmText: '删除',
+      onConfirm: () => this.confirmDelete(),
+      onCancel: () => { this.deleteShow = false }
+    })
+  }
+
   build() {
-    Column() { AppBar({ title:'就诊人' }) }
-    Stack({ alignContent: Alignment.TopStart }) {
+    Column() {
+      AppBar({ title:'就诊人' })
+      Stack({ alignContent: Alignment.TopStart }) {
       if (this.loading) {
         Column() { Text('加载中…').fontColor($r('app.color.text_hint')) }
           .width('100%').height('100%').justifyContent(FlexAlign.Center)
@@ -84,11 +97,11 @@ struct ContactManage {
           ForEach(this.list, (c: PatientContact) => {
             ListItem() {
               Row() {
-                AvatarIcon({ name: c.name, size: 48 })
+                AvatarIcon({ name: c.name, iconSize: 48 })
                 Column() {
                   Row() {
                     Text(c.name).fontSize(15).fontWeight(600).fontColor($r('app.color.text_primary')).margin({right:8})
-                    Text(RelationText[c.relation] ?? '')
+                    Text(relationText(c.relation))
                       .fontSize(11).padding({left:8,right:8,top:2,bottom:2})
                       .backgroundColor($r('app.color.primary_light'))
                       .fontColor($r('app.color.primary')).borderRadius(999)
@@ -104,7 +117,7 @@ struct ContactManage {
                .backgroundColor($r('app.color.bg_card')).borderRadius(16)
                .margin({ top: 12 })
             }.width('100%')
-          }, c => String(c.id))
+          }, (c: PatientContact) => String(c.id))
         }.width('100%').padding({top:4,bottom:96})
       }
 
@@ -120,16 +133,10 @@ struct ContactManage {
       .shadow({radius:8,color:'#440FA99E'})
       .onClick(() => this.openAdd())
     }
-    .width('100%').height('100%').backgroundColor($r('app.color.bg_page'))
-    .bindSheet($$$this.addSheet, this.FormSheet(), { height: 560, showClose: true, dragBar: true })
-    .bindSheet($$$this.deleteShow,
-      ConfirmDialog({
-        show: $$$this.deleteShow,
-        title: '删除就诊人',
-        message: this.deleteTarget ? `确认删除就诊人「${this.deleteTarget.name}」？若该就诊人存在未终态订单将无法删除。` : '确认删除该就诊人？',
-        danger: true, confirmText: '删除',
-        onConfirm: () => this.confirmDelete()
-      }), { height: 280, preferType: SheetType.CENTER, showClose: false, dragBar: true })
+      .width('100%').layoutWeight(1).backgroundColor($r('app.color.bg_page'))
+      .bindSheet($$this.addSheet, this.FormSheet(), { height: 560, showClose: true, dragBar: true })
+      .bindSheet($$this.deleteShow, this.deleteDialog(), { height: 280, preferType: SheetType.CENTER, showClose: false, dragBar: true })
+    }
   }
 
   @Builder FormSheet() {
@@ -144,7 +151,7 @@ struct ContactManage {
       Text('关系').fontSize(13).fontColor($r('app.color.text_hint'))
         .width('86%').margin({bottom:6}).alignSelf(ItemAlign.Start)
       Flex({wrap: FlexWrap.Wrap}) {
-        ForEach(RelationList, r => {
+        ForEach(RelationList, (r: RelationOption) => {
           Text(r.label)
             .fontSize(13)
             .padding({left:14,right:14,top:6,bottom:6}).margin(6)
@@ -154,8 +161,8 @@ struct ContactManage {
             .borderWidth(1).borderColor(this.fRelation===r.key ? $r('app.color.primary') : $r('app.color.divider'))
             .onClick(() => { this.fRelation = r.key })
         })
-      }.width('86%').justifyContent(FlexAlign.Start)
-      PrimaryButton({ label:'保存', variant:'primary', onClick: () => this.submitForm() })
+      }.width('86%')
+      PrimaryButton({ label:'保存', variant:'primary', onTap: () => this.submitForm() })
         .width('86%').margin({top:24,bottom:24})
     }.width('100%').alignItems(HorizontalAlign.Center).backgroundColor(Color.White)
   }

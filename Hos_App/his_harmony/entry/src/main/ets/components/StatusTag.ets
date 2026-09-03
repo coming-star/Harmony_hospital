@@ -7,24 +7,31 @@
  *
  * 用法：StatusTag({ status: order.status })
  */
-import { OrderStatus, OrderStatusText } from '../types'
+import type { OrderStatus } from '../types'
+import { OrderStatusValue, OrderStatusText } from '../types'
+
+interface StatusStyle {
+  bg: ResourceColor
+  fg: ResourceColor
+  label: string
+}
 
 @Component
 export struct StatusTag {
-  @Prop status: OrderStatus | string = OrderStatus.PENDING_PAYMENT
+  @Prop status: OrderStatus | string = OrderStatusValue.PENDING_PAYMENT
 
-  private pair(): { bg: ResourceColor; fg: ResourceColor; label: string } {
+  private pair(): StatusStyle {
     switch (this.status) {
-      case OrderStatus.PAID:
+      case OrderStatusValue.PAID:
         return { bg: $r('app.color.success_light'),
                  fg: $r('app.color.success'), label: OrderStatusText.PAID }
-      case OrderStatus.COMPLETED:
+      case OrderStatusValue.COMPLETED:
         return { bg: $r('app.color.secondary_booking_light'),
                  fg: $r('app.color.secondary_booking'), label: OrderStatusText.COMPLETED }
-      case OrderStatus.CANCELLED:
+      case OrderStatusValue.CANCELLED:
         return { bg: $r('app.color.disabled_light'),
                  fg: $r('app.color.text_hint'), label: OrderStatusText.CANCELLED }
-      case OrderStatus.PENDING_PAYMENT:
+      case OrderStatusValue.PENDING_PAYMENT:
       default:
         return { bg: $r('app.color.warning_light'),
                  fg: $r('app.color.warning'), label: OrderStatusText.PENDING_PAYMENT }

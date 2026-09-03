@@ -22,7 +22,7 @@ export struct AppointmentTab {
           .textAlign(TextAlign.Center)
           .margin({ bottom: $r('app.float.sp_32') })
 
-        Button('立即预约', ButtonType.Capsule)
+        Button('立即预约', { type: ButtonType.Capsule })
           .width(220)
           .height($r('app.float.btn_height_lg'))
           .backgroundColor($r('app.color.secondary_booking'))

@@ -24,7 +24,7 @@ export struct GrayTextInput {
   @Prop type: InputType = InputType.Normal
   @Prop rightEye: boolean = false                   // 密码框显示「👁」眼睛按钮
   @State eyeOpen: boolean = false                   // 眼睛打开=明文显示
-  @Link? onSubmit?: () => void
+  onSubmit?: () => void
 
   build() {
     Column() {

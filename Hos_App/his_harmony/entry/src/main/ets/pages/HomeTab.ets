@@ -9,12 +9,12 @@
  * 交付负责人：成员 B
  */
 import router from '@ohos.router'
-import { Route } from '../../utils/theme'
-import { SquareIconCard } from '../../components/SquareIconCard'
-import { SectionTitle } from '../../components/SectionTitle'
-import { EmptyState } from '../../components/EmptyState'
-import type { DepartmentTreeNode, QuickEntryItem } from '../../types'
-import * as deptApi from '../../api/department'
+import { Route } from '../utils/theme'
+import { SquareIconCard } from '../components/SquareIconCard'
+import { SectionTitle } from '../components/SectionTitle'
+import { EmptyState } from '../components/EmptyState'
+import type { DepartmentTreeNode, QuickEntryItem } from '../types'
+import * as deptApi from '../api/department'
 
 @Component
 export struct HomeTab {
@@ -27,7 +27,7 @@ export struct HomeTab {
   ]
 
   async aboutToAppear(): Promise<void> {
-    try { this.departments = await deptApi.getDepartmentTree() } catch(_: Error) {}
+    try { this.departments = await deptApi.getDepartmentTree() } catch (_) {}
   }
 
   private getHotDepts(): DepartmentTreeNode[] {
@@ -65,7 +65,7 @@ export struct HomeTab {
       .backgroundColor(Color.White)
       .borderRadius(999)
       .margin({ bottom: 20, left: 20, right: 20 })
-      .onClick(() => { try { router.pushUrl({ url: Route.DEPT_SELECT }) } catch(_: Error) {} })
+      .onClick(() => { try { router.pushUrl({ url: Route.DEPT_SELECT }) } catch (_) {} })
     }
     .width('100%')
     .backgroundColor($r('app.color.primary'))
@@ -90,14 +90,14 @@ export struct HomeTab {
 
   @Builder QuickEntries() {
     Row() {
-      ForEach(this.entries, it => {
+      ForEach(this.entries, (it: QuickEntryItem) => {
         Column() {
           SquareIconCard({
             glyph: it.iconFont,
             label: it.label,
             bg: $r('app.color.primary_light'),
             fg: $r('app.color.primary'),
-            onClick: () => { try { router.pushUrl({ url: it.route }) } catch(_: Error) {} }
+            onTap: () => { try { router.pushUrl({ url: it.route }) } catch (_) {} }
           })
         }.layoutWeight(1).justifyContent(FlexAlign.Center)
       })
@@ -108,13 +108,13 @@ export struct HomeTab {
   @Builder HotDepts() {
     SectionTitle({
       title: '热门科室', moreText: '全部',
-      onMore: () => { try { router.pushUrl({ url: Route.DEPT_SELECT }) } catch(_: Error) {} }
+      onMore: () => { try { router.pushUrl({ url: Route.DEPT_SELECT }) } catch (_) {} }
     })
     if (this.getHotDepts().length === 0) {
       EmptyState({ hint:'暂无可展示科室', emoji:'🏥' })
     } else {
       Grid() {
-        ForEach(this.getHotDepts(), d => {
+        ForEach(this.getHotDepts(), (d: DepartmentTreeNode) => {
           GridItem() {
             Column() {
               Row() {
@@ -138,7 +138,7 @@ export struct HomeTab {
               router.pushUrl({ url: Route.DOCTOR_LIST, params: { departmentId: d.id } })
             })
           }
-        }, (d) => String(d.id))
+        }, (d: DepartmentTreeNode) => String(d.id))
       }
       .columnsTemplate('1fr 1fr').rowsGap(12).columnsGap(12)
       .width('92%').padding({ left: 16, right: 16, top: 8, bottom: 16 })
