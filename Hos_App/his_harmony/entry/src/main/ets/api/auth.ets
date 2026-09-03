@@ -1,4 +1,4 @@
-import { get, post } from '../utils/request.ets'
+import { get, post } from '../utils/request'
 import type {
   AppLoginRequest, AppRegisterRequest, AdminLoginRequest,
   LoginResponse, LoginUser

@@ -5,11 +5,11 @@
  */
 import router from '@ohos.router'
 import type { PatientContact, ContactRequest, Relation } from '../../types'
-import * as contactApi from '../../api/contact.ets'
-import { AvatarIcon } from '../../components/AvatarIcon.ets'
-import { AppBar } from '../../components/AppBar.ets'
-import { PrimaryButton } from '../../components/PrimaryButton.ets'
-import { Route } from '../../utils/theme.ets'
+import * as contactApi from '../../api/contact'
+import { AvatarIcon } from '../../components/AvatarIcon'
+import { AppBar } from '../../components/AppBar'
+import { PrimaryButton } from '../../components/PrimaryButton'
+import { Route } from '../../utils/theme'
 import { RelationText } from '../../types'
 import { RelationList } from '../../types'
 import { promptAction } from '@kit.ArkUI'
@@ -20,34 +20,34 @@ struct ContactSelect {
   @State slotId: number = 0
   @State list: PatientContact[] = []
   @State selectedId: number = 0
-  @State addSheet = false
-  @State addName = ''
-  @State addPhone = ''
+  @State addSheet: boolean = false
+  @State addName: string = ''
+  @State addPhone: string = ''
   @State addRelation: Relation = Relation.SELF
 
-  async aboutToAppear() {
-    const p = router.getParams() as Record<string, Object> | undefined
+  async aboutToAppear(): Promise<void> {
+    const p: Record<string, Object> | undefined = router.getParams() as Record<string, Object> | undefined
     if (p && p['slotId']) this.slotId = Number(p['slotId'])
     await this.load()
   }
-  private async load() {
-    try { this.list = await contactApi.listContacts() } catch(_) {}
+  private async load(): Promise<void> {
+    try { this.list = await contactApi.listContacts() } catch(_: Error) {}
   }
-  private goConfirm() {
+  private goConfirm(): void {
     if (!this.selectedId) { promptAction.showToast({ message: '请选择就诊人' }); return }
     router.pushUrl({ url: Route.ORDER_CONFIRM, params: { slotId: this.slotId, contactId: this.selectedId } })
   }
-  private async submitAdd() {
-    if (!this.addName.trim()) return promptAction.showToast({ message:'请输入姓名' })
-    if (!/^1\d{10}$/.test(this.addPhone)) return promptAction.showToast({ message:'手机号格式错误' })
+  private async submitAdd(): Promise<void> {
+    if (!this.addName.trim()) { promptAction.showToast({ message:'请输入姓名' }); return }
+    if (!/^1\d{10}$/.test(this.addPhone)) { promptAction.showToast({ message:'手机号格式错误' }); return }
     const body: ContactRequest = { name: this.addName, phone: this.addPhone, relation: this.addRelation }
     try {
-      const r = await contactApi.createContact(body)
+      const r: { contactId: number } = await contactApi.createContact(body)
       this.addSheet = false
       this.addName = ''; this.addPhone = ''
       await this.load()
       this.selectedId = r.contactId
-    } catch (_) {}
+    } catch(_: Error) {}
   }
 
   @Builder AddContactSheet() {

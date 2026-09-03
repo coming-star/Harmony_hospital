@@ -23,16 +23,20 @@ export struct AvatarIcon {
       $r('app.color.success'),
       $r('app.color.warning')
     ]
-    let h = 0
-    for (let i = 0; i < this.name.length; i++) h = (h * 31 + this.name.charCodeAt(i)) | 0
-    const idx = Math.abs(h) % palette.length
+    let h: number = 0
+    for (let i: number = 0; i < this.name.length; i++) h = (h * 31 + this.name.charCodeAt(i)) | 0
+    const idx: number = Math.abs(h) % palette.length
     return palette[idx]
   }
 
   private initial(): string {
     if (!this.name) return '?'
-    const first = this.name.trim().charAt(0)
+    const first: string = this.name.trim().charAt(0)
     return first.toUpperCase()
+  }
+
+  private fontSize(): Length {
+    return typeof this.size === 'number' ? (this.size as number) * 0.42 : '42%'
   }
 
   build() {
@@ -50,7 +54,7 @@ export struct AvatarIcon {
           .height(this.size)
           .fill(this.pickBg())
         Text(this.initial())
-          .fontSize(typeof this.size === 'number' ? (this.size as number) * 0.42 : `${42}%`)
+          .fontSize(this.fontSize())
           .fontColor($r('app.color.text_white'))
           .fontWeight(FontWeight.Bold)
       }

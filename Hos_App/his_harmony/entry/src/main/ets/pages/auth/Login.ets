@@ -4,16 +4,16 @@
  * + 手机号/密码灰底圆角输入（密码右侧小眼睛）+ 用户协议复选框
  * + 蓝圆角大登录按钮 + 底部"还没有账号？立即注册"蓝字
  */
-import { AppBar } from '../../components/AppBar.ets'
-import { StethoscopeIcon } from '../../components/StethoscopeIcon.ets'
-import { GrayTextInput } from '../../components/GrayTextInput.ets'
-import { PrimaryButton } from '../../components/PrimaryButton.ets'
+import { AppBar } from '../../components/AppBar'
+import { StethoscopeIcon } from '../../components/StethoscopeIcon'
+import { GrayTextInput } from '../../components/GrayTextInput'
+import { PrimaryButton } from '../../components/PrimaryButton'
 import router from '@ohos.router'
 import { promptAction } from '@kit.ArkUI'
-import userStore from '../../store/UserStore.ets'
-import { Route } from '../../utils/theme.ets'
-import * as authApi from '../../api/auth.ets'
-import type { AppLoginRequest } from '../../types'
+import userStore from '../../store/UserStore'
+import { Route } from '../../utils/theme'
+import * as authApi from '../../api/auth'
+import type { AppLoginRequest, LoginResponse } from '../../types'
 
 @Entry
 @Component
@@ -29,16 +29,16 @@ struct Login {
     if (!this.agreed) { promptAction.showToast({ message:'请先阅读并同意《用户协议》与《隐私政策》' }); return false }
     return true
   }
-  private async submit() {
+  private async submit(): Promise<void> {
     if (this.loading || !this.validate()) return
     this.loading = true
     try {
       const body: AppLoginRequest = { phone: this.phone, password: this.password }
-      const r = await authApi.login(body)
+      const r: LoginResponse = await authApi.login(body)
       await userStore.setLogin(r)
       promptAction.showToast({ message:'登录成功' })
       router.replaceUrl({ url: Route.HOME })
-    } catch (_) {}
+    } catch(_: Error) {}
     finally { this.loading = false }
   }
 
@@ -94,7 +94,7 @@ struct Login {
           Row() {
             Text('还没有账号？').fontSize(14).fontColor($r('app.color.text_hint'))
             Text('立即注册').fontSize(14).fontColor($r('app.color.text_blue')).fontWeight(600)
-              .onClick(() => { try { router.pushUrl({ url: Route.REGISTER }) } catch(_){} })
+              .onClick(() => { try { router.pushUrl({ url: Route.REGISTER }) } catch(_: Error) {} })
           }.margin({ top: 8, bottom: 40 })
         }
         .width('100%').alignItems(HorizontalAlign.Center)

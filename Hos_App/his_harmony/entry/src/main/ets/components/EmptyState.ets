@@ -5,7 +5,7 @@
  *   EmptyState({ hint: '还没有挂号记录', actionText: '去预约', onAction: ()=>router.pushUrl(...) })
  */
 import router from '@ohos.router'
-import { Route } from '../utils/theme.ets'
+import { Route } from '../utils/theme'
 
 @Component
 export struct EmptyState {
@@ -21,7 +21,7 @@ export struct EmptyState {
   private doAction(): void {
     if (this.onAction) { this.onAction(); return }
     if (this.routeTo) {
-      try { router.pushUrl({ url: this.routeTo }) } catch (_) {}
+      try { router.pushUrl({ url: this.routeTo }) } catch(_: Error) {}
     }
   }
 

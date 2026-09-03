@@ -3,16 +3,16 @@
  * 顶部 4 Tab（全部/待支付/已支付/已取消）；列表卡片 + 详情展开 + "立即支付/取消预约"按钮
  */
 import router from '@ohos.router'
-import { Format } from '../../utils/format.ets'
+import { Format } from '../../utils/format'
 import { OrderStatus, OrderStatusText } from '../../types'
-import { Route } from '../../utils/theme.ets'
-import { AppBar } from '../../components/AppBar.ets'
+import { Route } from '../../utils/theme'
+import { AppBar } from '../../components/AppBar'
 import type { OrderDetail, PageResult } from '../../types'
-import * as orderApi from '../../api/order.ets'
-import { StatusTag } from '../../components/StatusTag.ets'
-import { FeeTag } from '../../components/FeeTag.ets'
-import { EmptyState } from '../../components/EmptyState.ets'
-import { ConfirmDialog } from '../../components/ConfirmDialog.ets'
+import * as orderApi from '../../api/order'
+import { StatusTag } from '../../components/StatusTag'
+import { FeeTag } from '../../components/FeeTag'
+import { EmptyState } from '../../components/EmptyState'
+import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { promptAction } from '@kit.ArkUI'
 
 const TABS: Array<{ key: string; label: string }> = [
@@ -26,42 +26,42 @@ const TABS: Array<{ key: string; label: string }> = [
 @Component
 struct OrderRecord {
   @State tabKey: string = ''
-  @State page = 1
-  @State size = 20
+  @State page: number = 1
+  @State size: number = 20
   @State list: OrderDetail[] = []
-  @State total = 0
+  @State total: number = 0
   @State expandId: number = 0
-  @State cancelShow = false
+  @State cancelShow: boolean = false
   @State cancelTarget?: OrderDetail
-  @State cancelLoading = false
+  @State cancelLoading: boolean = false
 
-  aboutToAppear() {
+  aboutToAppear(): void {
     // 可选：router params 带 tab
-    const p = router.getParams() as Record<string, Object> | undefined
+    const p: Record<string, Object> | undefined = router.getParams() as Record<string, Object> | undefined
     if (p && p['tab']) this.tabKey = String(p['tab'])
     this.reload()
   }
-  onChangeTab(k: string) { this.tabKey = k; this.page = 1; this.reload() }
+  onChangeTab(k: string): void { this.tabKey = k; this.page = 1; this.reload() }
 
-  async reload() {
+  async reload(): Promise<void> {
     try {
-      const q = { page: this.page, size: this.size } as Record<string, string | number>
+      const q: Record<string, string | number> = { page: this.page, size: this.size } as Record<string, string | number>
       if (this.tabKey) q['status'] = this.tabKey
       const r: PageResult<OrderDetail> = await orderApi.listMyOrders(q)
       this.list = this.page === 1 ? [...(r.records ?? [])] : [...this.list, ...(r.records ?? [])]
       this.total = r.total
-    } catch (_) {}
+    } catch(_: Error) {}
   }
 
-  async pay(o: OrderDetail) {
+  async pay(o: OrderDetail): Promise<void> {
     try {
       await orderApi.payOrder(o.id)
       promptAction.showToast({ message:'支付成功' })
       await this.reload()
-    } catch(_) {}
+    } catch(_: Error) {}
   }
-  askCancel(o: OrderDetail) { this.cancelTarget = o; this.cancelShow = true }
-  async confirmCancel() {
+  askCancel(o: OrderDetail): void { this.cancelTarget = o; this.cancelShow = true }
+  async confirmCancel(): Promise<void> {
     if (!this.cancelTarget || this.cancelLoading) return
     this.cancelLoading = true
     try {
@@ -69,7 +69,7 @@ struct OrderRecord {
       promptAction.showToast({ message:'已取消' })
       this.cancelShow = false
       await this.reload()
-    } catch(_) {}
+    } catch(_: Error) {}
     finally { this.cancelLoading = false }
   }
 
@@ -79,7 +79,7 @@ struct OrderRecord {
       // Tabs
       Scroll() {
         Row() {
-          ForEach(TABS, t => {
+          ForEach(TABS, (t: { key: string; label: string }) => {
             Text(t.label).fontSize(14).fontWeight(this.tabKey===t.key ? 700 : 500)
               .fontColor(this.tabKey===t.key ? $r('app.color.primary') : $r('app.color.text_secondary'))
               .padding({left:16,right:16,top:12,bottom:12})
@@ -94,12 +94,12 @@ struct OrderRecord {
       List() {
         if (this.list.length === 0) {
           ListItem() {
-            Column().width('100%') {
+            Column() {
               EmptyState({
                 hint: '还没有挂号记录', emoji:'📋',
                 actionText: '去预约', routeTo: Route.APPOINTMENT
               })
-            }
+            }.width('100%')
           }.width('100%').margin({top:40})
         }
         ForEach(this.list, (o: OrderDetail) => {
@@ -107,10 +107,10 @@ struct OrderRecord {
             Column() {
               // 头：科室 + StatusTag
               Row() {
-                Column().layoutWeight(1).alignItems(HorizontalAlign.Start) {
+                Column() {
                   Text(o.departmentName).fontSize(16).fontWeight(700).fontColor($r('app.color.text_primary'))
                   Text(`${o.doctorName} · ${o.levelName}`).fontSize(12).fontColor($r('app.color.text_hint')).margin({top:4})
-                }
+                }.layoutWeight(1).alignItems(HorizontalAlign.Start)
                 StatusTag({ status: o.status })
               }.width('100%')
 
@@ -129,7 +129,7 @@ struct OrderRecord {
                  .backgroundColor($r('app.color.bg_page')).borderRadius(12).margin({top:12})
               }
 
-              Row().margin({top:12}) {
+              Row() {
                 Text(this.expandId===o.id ? '收起详情' : '查看详情')
                   .fontSize(13).fontColor($r('app.color.text_hint'))
                   .padding(8).layoutWeight(1)
@@ -151,7 +151,7 @@ struct OrderRecord {
                     .fontColor($r('app.color.danger')).fontSize(13).borderRadius(999)
                     .onClick(() => this.askCancel(o))
                 }
-              }
+              }.margin({top:12})
             }
             .width('92%').padding(16).alignSelf(ItemAlign.Center)
             .backgroundColor($r('app.color.bg_card')).borderRadius(16).margin({top:12})

@@ -3,7 +3,7 @@
  *
  * 用法：FeeTag({ fen: order.amountFen, type: 'primary', size: 'lg' })
  */
-import { Format } from '../utils/format.ets'
+import { Format } from '../utils/format'
 
 type FeeType = 'primary' | 'danger' | 'secondary' | 'gray'
 type FeeSize = 'sm' | 'md' | 'lg'

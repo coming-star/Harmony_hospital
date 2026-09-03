@@ -7,7 +7,7 @@
  *   2. 可选：历史最近预约小卡片（最近一条订单的快捷入口"继续预约同款医生"）
  */
 import router from '@ohos.router'
-import { Route } from '../utils/theme.ets'
+import { Route } from '../utils/theme'
 
 @Component
 export struct AppointmentTab {

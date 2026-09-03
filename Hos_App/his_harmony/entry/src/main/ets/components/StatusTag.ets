@@ -32,17 +32,16 @@ export struct StatusTag {
   }
 
   build() {
-    const p = this.pair()
-    Text(p.label)
+    Text(this.pair().label)
       .fontSize($r('app.float.fs_12'))
-      .fontColor(p.fg)
+      .fontColor(this.pair().fg)
       .padding({
         left: $r('app.float.sp_12'),
         right: $r('app.float.sp_12'),
         top: 4,
         bottom: 4
       })
-      .backgroundColor(p.bg)
+      .backgroundColor(this.pair().bg)
       .borderRadius($r('app.float.radius_pill'))
   }
 }

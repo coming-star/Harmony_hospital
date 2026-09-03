@@ -3,66 +3,66 @@
  * 列表 + 编辑图标 + 删除图标 + 右下角 FAB 新增。
  */
 import type { PatientContact, ContactRequest, Relation, RelationText, RelationList } from '../../types'
-import * as contactApi from '../../api/contact.ets'
-import { AvatarIcon } from '../../components/AvatarIcon.ets'
-import { EmptyState } from '../../components/EmptyState.ets'
-import { ConfirmDialog } from '../../components/ConfirmDialog.ets'
-import { AppBar } from '../../components/AppBar.ets'
-import { PrimaryButton } from '../../components/PrimaryButton.ets'
+import * as contactApi from '../../api/contact'
+import { AvatarIcon } from '../../components/AvatarIcon'
+import { EmptyState } from '../../components/EmptyState'
+import { ConfirmDialog } from '../../components/ConfirmDialog'
+import { AppBar } from '../../components/AppBar'
+import { PrimaryButton } from '../../components/PrimaryButton'
 import { promptAction } from '@kit.ArkUI'
 
 @Entry
 @Component
 struct ContactManage {
   @State list: PatientContact[] = []
-  @State loading = true
-  @State addSheet = false
+  @State loading: boolean = true
+  @State addSheet: boolean = false
   @State editId: number = 0
-  @State fName = ''
-  @State fPhone = ''
+  @State fName: string = ''
+  @State fPhone: string = ''
   @State fRelation: Relation = Relation.SELF
-  @State deleteShow = false
+  @State deleteShow: boolean = false
   @State deleteTarget?: PatientContact
-  @State deleteLoading = false
+  @State deleteLoading: boolean = false
 
-  async aboutToAppear() { await this.reload() }
+  async aboutToAppear(): Promise<void> { await this.reload() }
 
-  async reload() {
+  async reload(): Promise<void> {
     this.loading = true
-    try { this.list = await contactApi.listContacts() } catch(_) {}
+    try { this.list = await contactApi.listContacts() } catch(_: Error) {}
     finally { this.loading = false }
   }
 
-  openAdd() {
+  openAdd(): void {
     this.editId = 0
     this.fName = ''; this.fPhone = ''; this.fRelation = Relation.SELF
     this.addSheet = true
   }
-  openEdit(c: PatientContact) {
+  openEdit(c: PatientContact): void {
     this.editId = c.id
     this.fName = c.name; this.fPhone = c.phone; this.fRelation = c.relation
     this.addSheet = true
   }
-  async submitForm() {
-    if (!this.fName.trim()) return promptAction.showToast({message:'请输入姓名'})
-    if (!/^1\d{10}$/.test(this.fPhone)) return promptAction.showToast({message:'手机号格式错误'})
+  async submitForm(): Promise<void> {
+    if (!this.fName.trim()) { promptAction.showToast({message:'请输入姓名'}); return }
+    if (!/^1\d{10}$/.test(this.fPhone)) { promptAction.showToast({message:'手机号格式错误'}); return }
     const body: ContactRequest = { name: this.fName.trim(), phone: this.fPhone, relation: this.fRelation }
     try {
       if (this.editId) await contactApi.updateContact(this.editId, body)
       else           await contactApi.createContact(body)
       this.addSheet = false
       await this.reload()
-    } catch(_) {}
+    } catch(_: Error) {}
   }
-  askDelete(c: PatientContact) { this.deleteTarget = c; this.deleteShow = true }
-  async confirmDelete() {
+  askDelete(c: PatientContact): void { this.deleteTarget = c; this.deleteShow = true }
+  async confirmDelete(): Promise<void> {
     if (!this.deleteTarget || this.deleteLoading) return
     this.deleteLoading = true
     try {
       await contactApi.deleteContact(this.deleteTarget.id)
       this.deleteShow = false
       await this.reload()
-    } catch(_) {}
+    } catch(_: Error) {}
     finally { this.deleteLoading = false }
   }
 
@@ -73,19 +73,19 @@ struct ContactManage {
         Column() { Text('加载中…').fontColor($r('app.color.text_hint')) }
           .width('100%').height('100%').justifyContent(FlexAlign.Center)
       } else if (this.list.length === 0) {
-        Column().width('100%').height('100%').padding({ top: 60 }) {
+        Column() {
           EmptyState({
             hint: '还没有就诊人，点击下方按钮添加', emoji:'👨‍👩‍👧',
             actionText: '新增就诊人', onAction: () => this.openAdd()
           })
-        }
+        }.width('100%').height('100%').padding({ top: 60 })
       } else {
         List() {
           ForEach(this.list, (c: PatientContact) => {
             ListItem() {
               Row() {
                 AvatarIcon({ name: c.name, size: 48 })
-                Column().alignItems(HorizontalAlign.Start).layoutWeight(1).margin({left:12}) {
+                Column() {
                   Row() {
                     Text(c.name).fontSize(15).fontWeight(600).fontColor($r('app.color.text_primary')).margin({right:8})
                     Text(RelationText[c.relation] ?? '')
@@ -94,7 +94,7 @@ struct ContactManage {
                       .fontColor($r('app.color.primary')).borderRadius(999)
                   }
                   Text(c.phone).fontSize(12).fontColor($r('app.color.text_hint')).margin({top:4})
-                }
+                }.alignItems(HorizontalAlign.Start).layoutWeight(1).margin({left:12})
                 // 编辑 / 删除
                 Text('✎').fontSize(18).fontColor($r('app.color.secondary_booking'))
                   .padding(12).onClick(() => this.openEdit(c))

@@ -43,16 +43,16 @@ export interface ApiResponse<T> {
 }
 
 function toast(msg: string, duration = 1500): void {
-  try { promptAction.showToast({ message: msg, duration }) } catch (_) { /* ignore */ }
+  try { promptAction.showToast({ message: msg, duration }) } catch(_: Error) { /* ignore */ }
 }
 
 function showLoading(on: boolean): void {
   if (!on) return
-  try { promptAction.showDialog({ message: '加载中…' }).catch(() => {}) } catch (_) {}
+  try { promptAction.showDialog({ message: '加载中…' }).catch(() => {}) } catch(_: Error) {}
 }
 
 function mergeHeaders(custom?: Record<string, string>): Record<string, string> {
-  const token = UserStore.getToken()
+  const token: string = UserStore.getToken()
   const h: Record<string, string> = {
     'Content-Type': 'application/json; charset=UTF-8',
     Accept: 'application/json',
@@ -68,7 +68,7 @@ function handleHttpError(resp: http.HttpResponse): void {
     toast('登录已失效，请重新登录')
     try {
       router.replaceUrl({ url: Route.LOGIN })
-    } catch (_) {}
+    } catch(_: Error) {}
     return
   }
   if (resp.responseCode === 403) {
@@ -92,8 +92,8 @@ async function request<T>(
   queryOrBody?: unknown,
   opts: RequestOptions = {}
 ): Promise<T> {
-  const url = path.startsWith('http') ? path : `${BASE_URL}${path}`
-  let finalUrl = url
+  const url: string = path.startsWith('http') ? path : `${BASE_URL}${path}`
+  let finalUrl: string = url
 
   // GET/DELETE：queryOrBody 拼 query
   if ((method === http.RequestMethod.GET || method === http.RequestMethod.DELETE)
@@ -110,8 +110,8 @@ async function request<T>(
 
   let resp: http.HttpResponse
   try {
-    const httpRequest = http.createHttp()
-    const extraData = (method === http.RequestMethod.POST || method === http.RequestMethod.PUT)
+    const httpRequest: http.HttpRequest = http.createHttp()
+    const extraData: string | undefined = (method === http.RequestMethod.POST || method === http.RequestMethod.PUT)
       ? (queryOrBody !== undefined ? JSON.stringify(queryOrBody) : undefined)
       : undefined
 
@@ -125,15 +125,16 @@ async function request<T>(
     httpRequest.destroy()
   } catch (e: unknown) {
     toast('网络异常，请检查网络后重试')
-    throw e
+    throw e as Error
   }
 
   // 非 2xx：按 HTTP 状态处理
   if (resp.responseCode < 200 || resp.responseCode >= 300) {
     handleHttpError(resp)
-    const err = new Error(`HTTP ${resp.responseCode}`)
-    ;(err as Error & { code?: number }).code = resp.responseCode
-    throw err
+    const err: Error = new Error(`HTTP ${resp.responseCode}`)
+    const ext: Error & { code?: number } = err as Error & { code?: number }
+    ext.code = resp.responseCode
+    throw ext
   }
 
   // 解析 JSON
@@ -142,21 +143,23 @@ async function request<T>(
     payload = typeof resp.result === 'string'
       ? JSON.parse(resp.result) as ApiResponse<T>
       : (resp.result as ApiResponse<T>)
-  } catch (_) {
+  } catch(_: Error) {
     toast('响应格式错误')
     throw new Error('Invalid JSON response')
   }
 
   // 业务 code 不是 200：根据 code 弹 toast
   if (payload.code !== 200) {
-    const msg = BIZ_MSG[payload.code] ?? payload.message ?? '操作失败'
+    const msg: string = BIZ_MSG[payload.code] ?? payload.message ?? '操作失败'
     toast(msg)
-    const err = new Error(msg)
-    ;(err as Error & { code?: number }).code = payload.code
-    throw err
+    const err: Error = new Error(msg)
+    const ext: Error & { code?: number } = err as Error & { code?: number }
+    ext.code = payload.code
+    throw ext
   }
 
-  return (opts.raw ? (payload as unknown as T) : payload.data) as T
+  const out: T = (opts.raw ? (payload as unknown as T) : payload.data) as T
+  return out
 }
 
 /** 导出的四个方法；调用示例：const list = await get<DepartmentTreeNode[]>('/api/departments/tree') */

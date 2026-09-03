@@ -3,33 +3,33 @@
  */
 export class Format {
   /** 金额：后端返回的「分」→ 前端展示的「元」，保留 0/1/2 位小数，带 ¥ 前缀。 */
-  static yuan(fen: number | string | null | undefined, withPrefix = true): string {
+  static yuan(fen: number | string | null | undefined, withPrefix: boolean = true): string {
     if (fen === null || fen === undefined || fen === '') return withPrefix ? '¥0' : '0'
-    const n = typeof fen === 'number' ? fen : parseInt(String(fen), 10)
+    const n: number = typeof fen === 'number' ? fen : parseInt(String(fen), 10)
     if (isNaN(n)) return withPrefix ? '¥0' : '0'
-    const str = (n / 100).toFixed(n % 100 === 0 ? 0 : (n % 10 === 0 ? 1 : 2))
+    const str: string = (n / 100).toFixed(n % 100 === 0 ? 0 : (n % 10 === 0 ? 1 : 2))
     return withPrefix ? `¥${str}` : str
   }
 
   /** 日期格式化：LocalDate 样式字符串 / Date 对象 → yyyy-MM-dd */
   static date(v: string | Date | null | undefined): string {
     if (!v) return ''
-    const d = typeof v === 'string' ? new Date(v) : v
+    const d: Date = typeof v === 'string' ? new Date(v) : v as Date
     if (isNaN(d.getTime())) return String(v).slice(0, 10)
-    const y = d.getFullYear()
-    const m = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
+    const y: number = d.getFullYear()
+    const m: string = String(d.getMonth() + 1).padStart(2, '0')
+    const day: string = String(d.getDate()).padStart(2, '0')
     return `${y}-${m}-${day}`
   }
 
   /** 日期+时间格式化 */
   static datetime(v: string | Date | null | undefined): string {
     if (!v) return ''
-    const d = typeof v === 'string' ? new Date(v) : v
+    const d: Date = typeof v === 'string' ? new Date(v) : v as Date
     if (isNaN(d.getTime())) return String(v).slice(0, 16).replace('T', ' ')
-    const date = Format.date(d)
-    const hh = String(d.getHours()).padStart(2, '0')
-    const mm = String(d.getMinutes()).padStart(2, '0')
+    const date: string = Format.date(d)
+    const hh: string = String(d.getHours()).padStart(2, '0')
+    const mm: string = String(d.getMinutes()).padStart(2, '0')
     return `${date} ${hh}:${mm}`
   }
 
@@ -38,7 +38,7 @@ export class Format {
     if (!v) return ''
     // 后端 LocalTime 直接返回 "08:00:00"；也兼容 Date 对象
     if (typeof v === 'string' && v.includes(':')) return v.slice(0, 5)
-    const d = typeof v === 'string' ? new Date(v) : v as Date
+    const d: Date = typeof v === 'string' ? new Date(v) : v as Date
     return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
   }
 
@@ -58,18 +58,18 @@ export class Format {
 
   /** 星期：0-6 周日-周六 → 一/二/三/四/五/六/日 */
   static weekday(dateLike: string | Date): string {
-    const d = typeof dateLike === 'string' ? new Date(dateLike) : dateLike
-    const arr = ['日', '一', '二', '三', '四', '五', '六']
+    const d: Date = typeof dateLike === 'string' ? new Date(dateLike) : dateLike as Date
+    const arr: string[] = ['日', '一', '二', '三', '四', '五', '六']
     return '周' + arr[d.getDay()]
   }
 
   /** 未来 7 天（含今天）日期数组：[{ iso, mmdd, weekday }]，用于医生列表页顶部 7 天切换条 */
-  static next7Days(offsetDays = 0): Array<{ iso: string; mmdd: string; weekday: string; isToday: boolean }> {
+  static next7Days(offsetDays: number = 0): Array<{ iso: string; mmdd: string; weekday: string; isToday: boolean }> {
     const result: Array<{ iso: string; mmdd: string; weekday: string; isToday: boolean }> = []
-    const today = new Date()
+    const today: Date = new Date()
     today.setHours(0, 0, 0, 0)
-    for (let i = offsetDays; i < offsetDays + 7; i++) {
-      const d = new Date(today.getTime() + i * 86400000)
+    for (let i: number = offsetDays; i < offsetDays + 7; i++) {
+      const d: Date = new Date(today.getTime() + i * 86400000)
       result.push({
         iso: Format.date(d),
         mmdd: `${String(d.getMonth() + 1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`,
@@ -82,10 +82,10 @@ export class Format {
 
   /** 生成 UUID（用作 idempotencyKey）：格式 8-4-4-4-12，不依赖环境 crypto */
   static uuid(): string {
-    const hex = '0123456789abcdef'
-    const rnd = (n: number) => {
-      let s = ''
-      for (let i = 0; i < n; i++) s += hex.charAt(Math.floor(Math.random() * 16))
+    const hex: string = '0123456789abcdef'
+    const rnd: (n: number) => string = (n: number): string => {
+      let s: string = ''
+      for (let i: number = 0; i < n; i++) s += hex.charAt(Math.floor(Math.random() * 16))
       return s
     }
     return `${rnd(8)}-${rnd(4)}-4${rnd(3)}-${hex.charAt((Math.random()*4)|8)}${rnd(3)}-${rnd(12)}`

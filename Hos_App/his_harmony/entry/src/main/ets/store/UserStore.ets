@@ -10,9 +10,9 @@
 import { preferences } from '@kit.ArkData'
 import { promptAction } from '@kit.ArkUI'
 import router from '@ohos.router'
-import { Route } from '../utils/theme.ets'
+import { Route } from '../utils/theme'
 import type { LoginResponse, UserType } from '../types'
-import * as authApi from '../api/auth.ets'
+import * as authApi from '../api/auth'
 
 const STORE_NAME = 'user_store'
 const K_TOKEN = 'access_token'
@@ -28,13 +28,13 @@ export class UserStore {
   }
 
   private prefs?: preferences.Preferences
-  private _token = ''
-  private _userId = 0
-  private _nickname = ''
+  private _token: string = ''
+  private _userId: number = 0
+  private _nickname: string = ''
   private _userType: UserType | '' = ''
 
   /** 是否已完成异步初始化 */
-  private inited = false
+  private inited: boolean = false
 
   // ---- 初始化（首次用到 any 同步方法时会等待；建议在 EntryAbility.onCreate 调 init() 提前做好）----
   async init(): Promise<void> {
@@ -45,7 +45,7 @@ export class UserStore {
       // 但 Store 单例没有 Context 时，改用页面 Context 调用 init(context) 版本。
       // 这里提供一个"空 init"保证不抛错，让页面侧在 aboutToAppear 调用 init(ctx)。
       this.inited = true
-    } catch (_) { /* ignore */ }
+    } catch(_: Error) { /* ignore */ }
   }
 
   /** 页面侧初始化（带 Context）*/
@@ -53,7 +53,7 @@ export class UserStore {
     if (this.inited && this.prefs) return
     this.prefs = await preferences.getPreferences(ctx, STORE_NAME)
     this._token    = String((await this.prefs.get(K_TOKEN, '')) ?? '')
-    const uid      = await this.prefs.get(K_USER_ID, 0) as number
+    const uid: number | string = await this.prefs.get(K_USER_ID, 0) as number | string
     this._userId   = typeof uid === 'number' ? uid : parseInt(String(uid), 10) || 0
     this._nickname = String((await this.prefs.get(K_NICK, '')) ?? '')
     this._userType = (String((await this.prefs.get(K_USER_TYPE, '')) ?? '')) as UserType | ''
@@ -89,7 +89,7 @@ export class UserStore {
     try {
       if (this._userType === 'ADMIN') await authApi.adminLogout()
       else if (this._token)     await authApi.logoutPatient()
-    } catch (_) { /* 忽略网络错误 */ }
+    } catch(_: Error) { /* 忽略网络错误 */ }
     this.logoutSync()
   }
 
@@ -108,7 +108,7 @@ export class UserStore {
     }
     try {
       router.replaceUrl({ url: Route.LOGIN })
-    } catch (_) { /* ignore */ }
+    } catch(_: Error) { /* ignore */ }
   }
 }
 

@@ -1,4 +1,4 @@
-import { get } from '../utils/request.ets'
+import { get } from '../utils/request'
 import type { SlotSummary } from '../types'
 
 export interface SlotQuery {

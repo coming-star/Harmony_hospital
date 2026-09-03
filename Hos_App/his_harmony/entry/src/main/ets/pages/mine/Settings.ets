@@ -2,9 +2,9 @@
  * 【设置页】交付负责人：成员 D。
  * Grouped List 风格：通用 / 关于 / 账号
  */
-import userStore from '../../store/UserStore.ets'
-import { ConfirmDialog } from '../../components/ConfirmDialog.ets'
-import { AppBar } from '../../components/AppBar.ets'
+import userStore from '../../store/UserStore'
+import { ConfirmDialog } from '../../components/ConfirmDialog'
+import { AppBar } from '../../components/AppBar'
 import { promptAction } from '@kit.ArkUI'
 
 interface RowItem {
@@ -19,7 +19,7 @@ interface RowItem {
 @Entry
 @Component
 struct Settings {
-  @State logoutShow = false
+  @State logoutShow: boolean = false
 
   private rows: RowItem[] = [
     { key:'cache',   label:'清除缓存',      group:'general', desc:'12.3 MB', onClick:() => promptAction.showToast({message:'缓存已清除'}) },
@@ -34,7 +34,7 @@ struct Settings {
     { key:'account', label:'账号' }
   ]
 
-  clickRow(r: RowItem) {
+  clickRow(r: RowItem): void {
     if (r.key === 'logout') { this.logoutShow = true; return }
     if (r.onClick) r.onClick()
   }
@@ -58,10 +58,9 @@ struct Settings {
       Text(gLabel).fontSize(12).fontColor($r('app.color.text_hint'))
         .width('100%').margin({left:16,bottom:4,top:12})
       Column() {
-        const items = this.rows.filter(r => r.group === gKey)
-        ForEach(items, (r: RowItem, idx: number) => {
+        ForEach(this.rows.filter(r => r.group === gKey), (r: RowItem, idx: number) => {
           this.Row(r)
-          if (idx < items.length - 1) {
+          if (idx < (this.rows.filter(r2 => r2.group === gKey).length - 1)) {
             Divider().color($r('app.color.divider')).margin({left:16})
           }
         })

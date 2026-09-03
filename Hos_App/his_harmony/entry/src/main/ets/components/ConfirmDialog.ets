@@ -33,7 +33,7 @@ export struct ConfirmDialog {
     try {
       if (this.onConfirm) this.onConfirm()
       else promptAction.showToast({ message: this.confirmText })
-    } catch (_) {}
+    } catch(_: Error) {}
   }
   private no(): void {
     this.show = false

@@ -4,28 +4,28 @@
  */
 import router from '@ohos.router'
 import type { OrderDetail } from '../../types'
-import * as orderApi from '../../api/order.ets'
-import { Format } from '../../utils/format.ets'
-import { Route } from '../../utils/theme.ets'
-import { FeeTag } from '../../components/FeeTag.ets'
-import { StatusTag } from '../../components/StatusTag.ets'
-import { AppBar } from '../../components/AppBar.ets'
-import { PrimaryButton } from '../../components/PrimaryButton.ets'
+import * as orderApi from '../../api/order'
+import { Format } from '../../utils/format'
+import { Route } from '../../utils/theme'
+import { FeeTag } from '../../components/FeeTag'
+import { StatusTag } from '../../components/StatusTag'
+import { AppBar } from '../../components/AppBar'
+import { PrimaryButton } from '../../components/PrimaryButton'
 
 @Entry
 @Component
 struct BookingSuccess {
   @State order?: OrderDetail
 
-  async aboutToAppear() {
-    const p = router.getParams() as Record<string, Object> | undefined
+  async aboutToAppear(): Promise<void> {
+    const p: Record<string, Object> | undefined = router.getParams() as Record<string, Object> | undefined
     if (p && p['orderId']) {
-      try { this.order = await orderApi.getOrder(String(p['orderId'])) } catch(_) {}
+      try { this.order = await orderApi.getOrder(String(p['orderId'])) } catch(_: Error) {}
     }
   }
 
-  private goRecord() { router.replaceUrl({ url: Route.ORDER_RECORD }) }
-  private goHome()   { router.replaceUrl({ url: Route.HOME }) }
+  private goRecord(): void { router.replaceUrl({ url: Route.ORDER_RECORD }) }
+  private goHome(): void   { router.replaceUrl({ url: Route.HOME }) }
 
   build() {
     Column() {

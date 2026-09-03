@@ -5,9 +5,9 @@
  * + 气泡对话（左侧 AI 蓝灰气泡 / 右侧用户 品牌蓝 气泡）
  * + 底部输入栏（灰底圆角输入框"输入你的问题…"+ 蓝色圆角纸飞机发送按钮）
  */
-import { AppBar } from '../components/AppBar.ets'
-import { Format } from '../utils/format.ets'
-import { Route } from '../utils/theme.ets'
+import { AppBar } from '../components/AppBar'
+import { Format } from '../utils/format'
+import { Route } from '../utils/theme'
 import router from '@ohos.router'
 
 interface Msg { id: string; role: 'user'|'ai'; content: string }
@@ -18,11 +18,11 @@ export struct AITab {
     { id: Format.uuid(), role:'ai', content:'你好！我是 AI 健康管家，可以为你解答健康问题、查询科室医生、协助预约挂号。'}
   ]
   @State input: string = ''
-  @State setupShow = false
+  @State setupShow: boolean = false
   private scroller: Scroller = new Scroller()
 
-  private send() {
-    const text = this.input.trim()
+  private send(): void {
+    const text: string = this.input.trim()
     if (!text) return
     this.list.push({ id: Format.uuid(), role:'user', content: text })
     this.input = ''
@@ -76,7 +76,7 @@ export struct AITab {
       .width('92%').padding(12).margin({top:12, bottom:8})
       .backgroundColor($r('app.color.primary_light'))
       .borderRadius($r('app.float.radius_md'))
-      .onClick(() => { try { router.pushUrl({ url: Route.SETTINGS }) } catch(e) {} })
+      .onClick(() => { try { router.pushUrl({ url: Route.SETTINGS }) } catch(e: Error) {} })
 
       List({ space:0, scroller: this.scroller }) {
         ForEach(this.list, m => {
@@ -96,7 +96,7 @@ export struct AITab {
           .onSubmit(() => this.send())
 
         Stack({alignContent:Alignment.Center}) {
-          RoundedRect({width:44,height:44,radius:14}).fill($r('app.color.primary'))
+          Stack() { Blank() }.width(44).height(44).borderRadius(14).backgroundColor($r('app.color.primary'))
           Text('✈').fontSize(22).fontColor($r('app.color.text_white'))
         }
         .margin({left:12})

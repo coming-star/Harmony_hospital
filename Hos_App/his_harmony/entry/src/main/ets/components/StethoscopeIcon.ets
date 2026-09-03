@@ -11,12 +11,7 @@ export struct StethoscopeIcon {
   build() {
     Stack({ alignContent: Alignment.Center }) {
       // 浅蓝圆角正方形底
-      RoundedRect({
-        width: this.size,
-        height: this.size,
-        radius: Math.floor(this.size * 0.3)
-      })
-        .fill($r('app.color.stethoscope_bg'))
+      Stack() { Blank() }.width(this.size).height(this.size).borderRadius(Math.floor(this.size * 0.3)).backgroundColor($r('app.color.stethoscope_bg'))
       // 听诊器图形（用 CanvasPath 太复杂，简版用两个同心圆 + 一竖线 + 两个圆环 = 足够形似参考图蓝 logo）
       Column() {
         // 两个耳朵圆圈（左右）

@@ -1,4 +1,4 @@
-import { get, post, put, del } from '../utils/request.ets'
+import { get, post, put, del } from '../utils/request'
 import type { PatientContact, ContactRequest } from '../types'
 
 /** 我的就诊人列表（按创建时间倒序）*/

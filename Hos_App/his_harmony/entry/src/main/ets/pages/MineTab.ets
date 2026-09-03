@@ -6,10 +6,10 @@
  * 4. 红色"退出登录"按钮（弹 ConfirmDialog 二次确认）
  */
 import router from '@ohos.router'
-import userStore from '../../store/UserStore.ets'
-import { AvatarIcon } from '../../components/AvatarIcon.ets'
-import { ConfirmDialog } from '../../components/ConfirmDialog.ets'
-import { Route } from '../../utils/theme.ets'
+import userStore from '../../store/UserStore'
+import { AvatarIcon } from '../../components/AvatarIcon'
+import { ConfirmDialog } from '../../components/ConfirmDialog'
+import { Route } from '../../utils/theme'
 
 interface EntryRow {
   key: string
@@ -26,7 +26,7 @@ interface InfoRow {
 
 @Component
 export struct MineTab {
-  @State logoutShow = false
+  @State logoutShow: boolean = false
   private readonly entries: EntryRow[] = [
     { key:'orders',   glyph:'📄', title:'挂号记录',     sub:'查看历史挂号',           route: Route.ORDER_RECORD },
     { key:'contacts', glyph:'🧑‍🤝‍🧑', title:'就诊人管理',   sub:'管理绑定就诊人',           route: Route.CONTACT_MGNT },
@@ -37,9 +37,9 @@ export struct MineTab {
     { key:'技术栈',   value:'HarmonyOS · ArkTS · Spring Boot 3' }
   ]
 
-  private click(r: EntryRow) {
+  private click(r: EntryRow): void {
     if (r.disabled || !r.route) return
-    try { router.pushUrl({ url: r.route }) } catch(_) {}
+    try { router.pushUrl({ url: r.route }) } catch(_: Error) {}
   }
 
   @Builder BlueTopHeader() {
@@ -59,7 +59,7 @@ export struct MineTab {
           } else {
             Text('未登录，点击这里登录').fontSize(13).fontColor('#CCFFFFFF')
               .margin({top:4}).padding(4)
-              .onClick(() => { try { router.pushUrl({ url: Route.LOGIN }) } catch(_){} })
+              .onClick(() => { try { router.pushUrl({ url: Route.LOGIN }) } catch(_: Error) {} })
           }
         }.margin({ left: 16 }).layoutWeight(1).alignItems(HorizontalAlign.Start)
       }
@@ -73,14 +73,14 @@ export struct MineTab {
     Row() {
       // 图标方框（参考图：左灰方框）
       Stack() {
-        RoundedRect({width:44,height:44,radius:10}).fill($r('app.color.primary_light'))
+        Stack() { Blank() }.width(44).height(44).borderRadius(10).backgroundColor($r('app.color.primary_light'))
         Text(r.glyph).fontSize(22)
       }.margin({ right: 14 })
 
-      Column().layoutWeight(1).alignItems(HorizontalAlign.Start) {
+      Column() {
         Text(r.title).fontSize(16).fontWeight(600).fontColor($r('app.color.text_primary'))
         Text(r.sub).fontSize(12).fontColor($r('app.color.text_secondary')).margin({ top: 4 })
-      }
+      }.layoutWeight(1).alignItems(HorizontalAlign.Start)
       Text('›').fontSize(28).fontColor($r('app.color.text_hint'))
     }
     .width('92%').padding(18).alignSelf(ItemAlign.Center)

@@ -3,14 +3,14 @@
  * 4 个底部 Tabs + 4 个子 Tab Content。
  * 每个 Tab 的具体 UI/逻辑 拆分到 HomeTab/AppointmentTab/AITab/MineTab 四个组件中。
  */
-import { TAB_INDEX, TAB_KEYS, TAB_LABELS, TabKey, Theme, Route } from '../utils/theme.ets'
+import { TAB_INDEX, TAB_KEYS, TAB_LABELS, TabKey, Theme, Route } from '../utils/theme'
 import router from '@ohos.router'
 
 // 具体 Tab 内容页（目前是骨架 UI，由对应负责人补充真实接口数据与卡片 UI）
-import { HomeTab } from './HomeTab.ets'
-import { AppointmentTab } from './AppointmentTab.ets'
-import { AITab } from './AITab.ets'
-import { MineTab } from './MineTab.ets'
+import { HomeTab } from './HomeTab'
+import { AppointmentTab } from './AppointmentTab'
+import { AITab } from './AITab'
+import { MineTab } from './MineTab'
 
 @Entry
 @Component
@@ -35,14 +35,13 @@ struct Index {
   }
 
   @Builder TabBuilder(key: TabKey, index: number) {
-    const active = this.currentIndex === index
     Column() {
-      Text(this.iconFor(key, active))
+      Text(this.iconFor(key, this.currentIndex === index))
         .fontSize($r('app.float.fs_24'))
         .margin({ bottom: 2 })
       Text(TAB_LABELS[key])
         .fontSize($r('app.float.fs_12'))
-        .fontColor(active ? this.activeColor(key) : $r('app.color.text_hint'))
+        .fontColor(this.currentIndex === index ? this.activeColor(key) : $r('app.color.text_hint'))
     }
     .width('100%')
     .height('100%')

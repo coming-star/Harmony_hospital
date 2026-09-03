@@ -1,4 +1,4 @@
-import { get, post, put } from '../utils/request.ets'
+import { get, post, put } from '../utils/request'
 import type {
   OrderDetail, PageResult, CreateOrderRequest,
   DailyCount, DepartmentCount

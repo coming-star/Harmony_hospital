@@ -1,4 +1,4 @@
-import { get, post } from '../utils/request.ets'
+import { get, post } from '../utils/request'
 
 export interface ChatMessageIn {
   /** 用户输入的自然语言文本 */

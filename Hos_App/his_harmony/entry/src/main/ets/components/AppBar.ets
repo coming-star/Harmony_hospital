@@ -25,7 +25,7 @@ export struct AppBar {
         Text('‹').fontSize(32).fontColor($r('app.color.text_white')).fontWeight(300)
           .width(40).height(40).textAlign(TextAlign.Center)
           .margin({ left: $r('app.float.sp_4') })
-          .onClick(() => { try { router.back() } catch(_) {} })
+          .onClick(() => { try { router.back() } catch(_: Error) {} })
       } else {
         Blank().width(40).height(40)
       }

@@ -5,12 +5,12 @@
  */
 import router from '@ohos.router'
 import type { SlotSummary } from '../../types'
-import { Format } from '../../utils/format.ets'
-import { Route } from '../../utils/theme.ets'
-import { AppBar } from '../../components/AppBar.ets'
-import * as slotApi from '../../api/slot.ets'
-import { FeeTag } from '../../components/FeeTag.ets'
-import { AvatarIcon } from '../../components/AvatarIcon.ets'
+import { Format } from '../../utils/format'
+import { Route } from '../../utils/theme'
+import { AppBar } from '../../components/AppBar'
+import * as slotApi from '../../api/slot'
+import { FeeTag } from '../../components/FeeTag'
+import { AvatarIcon } from '../../components/AvatarIcon'
 import { promptAction } from '@kit.ArkUI'
 
 interface DoctorDayView { date: string; mmdd: string; weekday: string; isToday: boolean }
@@ -25,28 +25,29 @@ struct DoctorList {
   }))
   @State slots: SlotSummary[] = []
 
-  async aboutToAppear() {
-    const params = router.getParams() as Record<string, Object> | undefined
+  async aboutToAppear(): Promise<void> {
+    const params: Record<string, Object> | undefined = router.getParams() as Record<string, Object> | undefined
     if (params && params['departmentId']) {
       this.departmentId = Number(params['departmentId'])
       await this.loadSlots()
     }
   }
-  async loadSlots() {
+  async loadSlots(): Promise<void> {
     if (!this.departmentId) return
     try { this.slots = await slotApi.listSlots({ departmentId: this.departmentId, date: this.visitDate }) }
-    catch(_) {}
+    catch(_: Error) {}
   }
   private doctors(): Array<{doctorId:number, doctorName:string, items: SlotSummary[]}> {
-    const m = new Map<number, {doctorId:number, doctorName:string, items: SlotSummary[]}>()
-    this.slots.forEach(s => {
-      let g = m.get(s.doctorId)
+    const m: Map<number, {doctorId:number, doctorName:string, items: SlotSummary[]}> =
+      new Map<number, {doctorId:number, doctorName:string, items: SlotSummary[]}>()
+    this.slots.forEach((s: SlotSummary) => {
+      let g: {doctorId:number, doctorName:string, items: SlotSummary[]} | undefined = m.get(s.doctorId)
       if (!g) { g = { doctorId: s.doctorId, doctorName: s.doctorName, items: [] }; m.set(s.doctorId, g) }
       g.items.push(s)
     })
     return Array.from(m.values())
   }
-  private pickSlot(s: SlotSummary) {
+  private pickSlot(s: SlotSummary): void {
     if (s.remainingQuota <= 0) { promptAction.showToast({ message:'该时段已约满' }); return }
     router.pushUrl({ url: Route.CONTACT_SELECT, params: { slotId: s.slotId } })
   }
@@ -58,34 +59,32 @@ struct DoctorList {
       Scroll() {
         Row() {
           ForEach(this.days, (d: DoctorDayView) => {
-            const selected = d.date === this.visitDate
             Column() {
               Text(d.isToday ? '今天' : d.weekday)
                 .fontSize(12)
-                .fontColor(selected ? $r('app.color.text_white') : $r('app.color.text_secondary'))
+                .fontColor(d.date === this.visitDate ? $r('app.color.text_white') : $r('app.color.text_secondary'))
               Text(d.mmdd)
-                .fontSize(14).fontWeight(selected ? 700 : 500)
-                .fontColor(selected ? $r('app.color.text_white') : $r('app.color.text_primary'))
+                .fontSize(14).fontWeight(d.date === this.visitDate ? 700 : 500)
+                .fontColor(d.date === this.visitDate ? $r('app.color.text_white') : $r('app.color.text_primary'))
                 .margin({ top: 4 })
             }
             .width(64).height(66).justifyContent(FlexAlign.Center)
             .borderRadius($r('app.float.radius_md'))
-            .backgroundColor(selected ? $r('app.color.primary') : $r('app.color.bg_card'))
+            .backgroundColor(d.date === this.visitDate ? $r('app.color.primary') : $r('app.color.bg_card'))
             .margin({ right: 10 })
-            .shadow({ radius: selected ? 0 : 1, color: '#11000000', offsetY: 1 })
+            .shadow({ radius: d.date === this.visitDate ? 0 : 1, color: '#11000000', offsetY: 1 })
             .onClick(() => { this.visitDate = d.date; this.loadSlots() })
           })
         }.padding(16)
       }.scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Off).width('100%')
 
-      const docs = this.doctors()
-      if (docs.length === 0) {
+      if (this.doctors().length === 0) {
         Column() { Text('当日暂无号源')
             .fontSize(14).fontColor($r('app.color.text_hint'))
             .padding({top:40}) }.layoutWeight(1)
       } else {
         List() {
-          ForEach(docs, g => {
+          ForEach(this.doctors(), (g: {doctorId:number, doctorName:string, items: SlotSummary[]}) => {
             ListItem() {
               Column() {
                 Row() {
@@ -99,15 +98,14 @@ struct DoctorList {
 
                 Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Start }) {
                   ForEach(g.items, (s: SlotSummary) => {
-                    const sold = s.remainingQuota <= 0
                     Column() {
                       Text(`${Format.time(s.startTime)}-${Format.time(s.endTime)}`)
                         .fontSize(13)
-                        .fontColor(sold ? $r('app.color.disabled') : $r('app.color.text_primary'))
+                        .fontColor(s.remainingQuota <= 0 ? $r('app.color.disabled') : $r('app.color.text_primary'))
                       Row() {
                         FeeTag({ fen: s.feeFen, size: 'sm' })
                         Text(`余${s.remainingQuota}`)
-                          .fontSize(11).fontColor(sold ? $r('app.color.disabled') : $r('app.color.text_hint'))
+                          .fontSize(11).fontColor(s.remainingQuota <= 0 ? $r('app.color.disabled') : $r('app.color.text_hint'))
                           .margin({ left: 8 })
                       }.margin({ top: 6 })
                     }
@@ -115,8 +113,8 @@ struct DoctorList {
                     .justifyContent(FlexAlign.Center)
                     .borderRadius($r('app.float.radius_md'))
                     .borderWidth(1)
-                    .borderColor(sold ? $r('app.color.disabled_light') : $r('app.color.primary'))
-                    .backgroundColor(sold ? $r('app.color.disabled_light') : $r('app.color.bg_card'))
+                    .borderColor(s.remainingQuota <= 0 ? $r('app.color.disabled_light') : $r('app.color.primary'))
+                    .backgroundColor(s.remainingQuota <= 0 ? $r('app.color.disabled_light') : $r('app.color.bg_card'))
                     .onClick(() => this.pickSlot(s))
                   }, s => String(s.slotId))
                 }.padding({ left: 18, right: 18, bottom: 18 })
