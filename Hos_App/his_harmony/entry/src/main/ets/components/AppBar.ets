@@ -7,15 +7,16 @@
  * 用法：
  *   AppBar({ title: '选择科室' })
  *   AppBar({ title: '登录', hideBack: true })
- *   AppBar({ title: 'AI健康管家', rightIcon: '⚙️', onRightClick: () => openSettings() })
+ *   AppBar({ title: 'AI健康管家', rightIcon: AppIcon.settings, onRightClick: () => openSettings() })
  */
 import router from '@ohos.router'
+import { AppIcon } from '../utils/icons'
 
 @Component
 export struct AppBar {
   @Prop title: string = ''
   @Prop hideBack: boolean = false
-  /** 右侧图标（简单做法用字符串占位，如 ⚙️ / 🔍 / 🩺；正式版替换 SymbolGlyph 或 PNG）*/
+  /** 右侧图标（symbol 资源字符串，如 AppIcon.settings；从 utils/icons.ets 引用）*/
   @Prop rightIcon: string = ''
   onRightClick?: () => void
 
@@ -23,7 +24,7 @@ export struct AppBar {
     Row() {
       if (!this.hideBack) {
         Text('‹').fontSize(32).fontColor($r('app.color.text_white')).fontWeight(300)
-          .width(40).height(40).textAlign(TextAlign.Center)
+          .width(40).height(50).textAlign(TextAlign.Center)
           .margin({ left: $r('app.float.sp_4') })
           .onClick(() => { try { router.back() } catch (_) {} })
       } else {
@@ -33,14 +34,15 @@ export struct AppBar {
       Text(this.title)
         .layoutWeight(1)
         .textAlign(TextAlign.Center)
-        .fontSize($r('app.float.fs_20'))
+        .fontSize(26)
         .fontWeight(700)
         .fontColor($r('app.color.text_white'))
         .margin({ right: this.hideBack ? 40 : 0 })
 
       if (this.rightIcon && this.rightIcon.length > 0) {
-        Text(this.rightIcon).fontSize(22).fontColor($r('app.color.text_white'))
-          .width(40).height(40).textAlign(TextAlign.Center)
+        SymbolGlyph($r(this.rightIcon))
+          .fontSize(22)
+          .width(40).height(40)
           .onClick(() => { if (this.onRightClick) this.onRightClick() })
       } else if (!this.hideBack) {
         Blank().width(40).height(40)

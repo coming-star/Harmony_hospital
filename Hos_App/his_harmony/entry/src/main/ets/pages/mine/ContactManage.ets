@@ -5,6 +5,7 @@
 import type { PatientContact, ContactRequest, RelationOption, Relation } from '../../types'
 import { RelationValue, RelationList, relationText } from '../../types'
 import * as contactApi from '../../api/contact'
+import { AppIcon } from '../../utils/icons'
 import { AvatarIcon } from '../../components/AvatarIcon'
 import { EmptyState } from '../../components/EmptyState'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
@@ -88,7 +89,7 @@ struct ContactManage {
       } else if (this.list.length === 0) {
         Column() {
           EmptyState({
-            hint: '还没有就诊人，点击下方按钮添加', emoji:'👨‍👩‍👧',
+            hint: '还没有就诊人，点击下方按钮添加', icon: AppIcon.profileOutline,
             actionText: '新增就诊人', onAction: () => this.openAdd()
           })
         }.width('100%').height('100%').padding({ top: 60 })
@@ -109,10 +110,14 @@ struct ContactManage {
                   Text(c.phone).fontSize(12).fontColor($r('app.color.text_hint')).margin({top:4})
                 }.alignItems(HorizontalAlign.Start).layoutWeight(1).margin({left:12})
                 // 编辑 / 删除
-                Text('✎').fontSize(18).fontColor($r('app.color.secondary_booking'))
-                  .padding(12).onClick(() => this.openEdit(c))
-                Text('🗑').fontSize(18).fontColor($r('app.color.danger'))
-                  .padding(12).onClick(() => this.askDelete(c))
+                SymbolGlyph($r(AppIcon.edit))
+                  .fontSize(18)
+                  .padding(12)
+                  .onClick(() => this.openEdit(c))
+                SymbolGlyph($r(AppIcon.delete))
+                  .fontSize(18)
+                  .padding(12)
+                  .onClick(() => this.askDelete(c))
               }.width('92%').padding(16).alignSelf(ItemAlign.Center)
                .backgroundColor($r('app.color.bg_card')).borderRadius(16)
                .margin({ top: 12 })

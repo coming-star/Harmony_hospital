@@ -22,7 +22,7 @@ export struct SectionTitle {
         .margin({ right: $r('app.float.sp_8') })
 
       Text(this.title)
-        .fontSize($r('app.float.fs_18'))
+        .fontSize(20)
         .fontWeight(FontWeight.Bold)
         .fontColor(this.titleColor)
         .layoutWeight(1)
@@ -30,10 +30,10 @@ export struct SectionTitle {
       if (this.moreText && this.moreText.length > 0) {
         Row() {
           Text(this.moreText)
-            .fontSize($r('app.float.fs_14'))
+            .fontSize(20)
             .fontColor($r('app.color.text_hint'))
           Text(' ›')
-            .fontSize($r('app.float.fs_16'))
+            .fontSize(20)
             .fontColor($r('app.color.text_hint'))
         }
         .padding({ left: $r('app.float.sp_8'), right: $r('app.float.sp_8') })
@@ -44,7 +44,7 @@ export struct SectionTitle {
     .width('100%')
     .padding({
       left: $r('app.float.sp_16'), right: $r('app.float.sp_8'),
-      top: $r('app.float.sp_4'), bottom: $r('app.float.sp_8')
+      top: $r('app.float.sp_16'), bottom: $r('app.float.sp_8')
     })
   }
 }

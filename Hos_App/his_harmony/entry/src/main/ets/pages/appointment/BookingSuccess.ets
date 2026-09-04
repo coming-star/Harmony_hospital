@@ -5,6 +5,7 @@
 import router from '@ohos.router'
 import type { OrderDetail } from '../../types'
 import * as orderApi from '../../api/order'
+import { AppIcon } from '../../utils/icons'
 import { Format } from '../../utils/format'
 import { Route } from '../../utils/theme'
 import { FeeTag } from '../../components/FeeTag'
@@ -31,11 +32,14 @@ struct BookingSuccess {
     Column() {
       AppBar({ title: '预约成功', hideBack: true })
       Column() {
-        Text('✔').fontSize(80).fontColor($r('app.color.success'))
-          .width(120).height(120).textAlign(TextAlign.Center)
-          .borderWidth(6).borderColor($r('app.color.success_light'))
-          .borderRadius(999).margin({bottom:16})
-        Text('预约成功！').fontSize(24).fontWeight(800)
+        SymbolGlyph($r(AppIcon.success))
+          .fontSize(88)
+          .width(120).height(120)
+          .borderWidth(6)
+          .borderColor($r('app.color.success_light'))
+          .borderRadius(999)
+          .margin({bottom:16})
+        Text('预约成功！').fontSize(28).fontWeight(800)
           .fontColor($r('app.color.text_primary')).margin({bottom:8})
         if (this.order) {
           Text(`订单号：${this.order.orderNo}`).fontSize(13)

@@ -10,9 +10,11 @@
  */
 import router from '@ohos.router'
 import { Route } from '../utils/theme'
+import { AppIcon } from '../utils/icons'
 import { SquareIconCard } from '../components/SquareIconCard'
 import { SectionTitle } from '../components/SectionTitle'
 import { EmptyState } from '../components/EmptyState'
+import { StethoscopeIcon } from '../components/StethoscopeIcon'
 import type { DepartmentTreeNode, QuickEntryItem } from '../types'
 import * as deptApi from '../api/department'
 
@@ -20,10 +22,10 @@ import * as deptApi from '../api/department'
 export struct HomeTab {
   @State departments: DepartmentTreeNode[] = []
   private readonly entries: QuickEntryItem[] = [
-    { key:'book',   label:'在线挂号', iconFont:'📅', route: Route.DEPT_SELECT },
-    { key:'orders', label:'挂号记录', iconFont:'📋', route: Route.ORDER_RECORD },
-    { key:'peo',    label:'就诊人',   iconFont:'👨‍👩‍👧', route: Route.CONTACT_MGNT },
-    { key:'ai',     label:'AI咨询',   iconFont:'🤖',   route: Route.AI_CHAT }
+    { key:'book',   label:'在线挂号', iconFont: AppIcon.appointmentOutline, route: Route.DEPT_SELECT },
+    { key:'orders', label:'挂号记录', iconFont: AppIcon.message, route: Route.ORDER_RECORD },
+    { key:'peo',    label:'就诊人',   iconFont: AppIcon.profileOutline, route: Route.CONTACT_MGNT },
+    { key:'ai',     label:'AI咨询',   iconFont: AppIcon.aiOutline,   route: Route.AI_CHAT }
   ]
 
   async aboutToAppear(): Promise<void> {
@@ -44,24 +46,26 @@ export struct HomeTab {
     Column() {
       Row() {
         Column() {
-          Text('东软云医院').fontSize(22).fontWeight(800).fontColor($r('app.color.text_white'))
-          Text('预约挂号 · 健康管理').fontSize(13).fontColor('#CCFFFFFF').margin({ top: 4 })
+          Text('东软云医院').fontSize(32).fontWeight(800).fontColor($r('app.color.text_white'))
+          Text('预约挂号 · 健康管理').fontSize(20).fontColor('#CCFFFFFF').margin({ top: 6 })
         }.layoutWeight(1).alignItems(HorizontalAlign.Start)
 
         // 右上角 stethoscope 圆 icon（参考图）
         Stack({alignContent:Alignment.Center}) {
           Circle().width(40).height(40).fill('rgba(255,255,255,0.20)')
-          Text('🩺').fontSize(20).fontColor($r('app.color.text_white'))
+          StethoscopeIcon({ customSize: 20, color: $r('app.color.text_white') })
         }
-      }.width('100%').padding({ top: 56, left: 20, right: 20, bottom: 16 })
+      }.width('100%').padding({ top: 12, left: 20, right: 20, bottom: 16 })
 
       // 白色大圆角搜索框
       Row() {
-        Text('🔍').fontSize(18).fontColor($r('app.color.text_hint')).margin({ left: 16, right: 8 })
-        Text('搜索科室、医生').fontSize(14).fontColor($r('app.color.text_hint'))
+        SymbolGlyph($r(AppIcon.search))
+          .fontSize(22)
+          .margin({ left: 16, right: 8 })
+        Text('搜索科室、医生').fontSize(20).fontColor($r('app.color.text_hint'))
           .layoutWeight(1)
       }
-      .width('92%').height(46)
+      .width('92%').height(52)
       .backgroundColor(Color.White)
       .borderRadius(999)
       .margin({ bottom: 20, left: 20, right: 20 })
@@ -93,7 +97,7 @@ export struct HomeTab {
       ForEach(this.entries, (it: QuickEntryItem) => {
         Column() {
           SquareIconCard({
-            glyph: it.iconFont,
+            icon: it.iconFont,
             label: it.label,
             bg: $r('app.color.primary_light'),
             fg: $r('app.color.primary'),
@@ -111,23 +115,39 @@ export struct HomeTab {
       onMore: () => { try { router.pushUrl({ url: Route.DEPT_SELECT }) } catch (_) {} }
     })
     if (this.getHotDepts().length === 0) {
-      EmptyState({ hint:'暂无可展示科室', emoji:'🏥' })
+      Column() {
+        SymbolGlyph($r(AppIcon.emptyBox))
+          .fontSize(56)
+          .margin({ bottom: 8 })
+        Text('暂无可展示科室')
+          .fontSize(22)
+          .fontColor($r('app.color.text_hint'))
+      }
+      .width('100%')
+      .padding({
+        top: 32,
+        bottom: 20
+      })
     } else {
       Grid() {
         ForEach(this.getHotDepts(), (d: DepartmentTreeNode) => {
           GridItem() {
             Column() {
               Row() {
-                Stack() { Circle().width(48).height(48).fill($r('app.color.primary_light'))
-                  Text('🩺').fontSize(22) }.margin({ right: 10 })
+                Stack() {
+                  Circle().width(48).height(48).fill($r('app.color.primary_light'))
+                  StethoscopeIcon({ customSize: 22, color: $r('app.color.primary') })
+                }.margin({ right: 10 })
                 Column() {
-                  Text(d.name).fontSize(15).fontWeight(700).fontColor($r('app.color.text_primary'))
+                  Text(d.name).fontSize(19).fontWeight(700).fontColor($r('app.color.text_primary'))
                   if (d.description) {
-                    Text(d.description).fontSize(11).fontColor($r('app.color.text_secondary'))
+                    Text(d.description).fontSize(15).fontColor($r('app.color.text_secondary'))
                       .margin({top:4}).maxLines(2).textOverflow({overflow:TextOverflow.Ellipsis})
                   }
                 }.layoutWeight(1).alignItems(HorizontalAlign.Start)
-                Text('›').fontSize(24).fontColor($r('app.color.text_hint')).margin({right:4})
+                SymbolGlyph($r(AppIcon.forward))
+                  .fontSize(24)
+                  .margin({right:4})
               }
               .width('100%').padding(16)
             }

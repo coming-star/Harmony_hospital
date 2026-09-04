@@ -4,6 +4,7 @@
  * 每个 Tab 的具体 UI/逻辑 拆分到 HomeTab/AppointmentTab/AITab/MineTab 四个组件中。
  */
 import { TAB_INDEX, TAB_KEYS, TAB_LABELS, TabKey, Theme, Route } from '../utils/theme'
+import { AppIcon } from '../utils/icons'
 import router from '@ohos.router'
 
 // 具体 Tab 内容页（目前是骨架 UI，由对应负责人补充真实接口数据与卡片 UI）
@@ -33,29 +34,29 @@ struct Index {
     switch (key) {
       case 'home': return '首页'
       case 'appointment': return '预约'
-      case 'ai': return 'AI'
+      case 'ai': return 'AI管家'
       case 'mine': return '我的'
       default: return ''
     }
   }
 
-  private iconFor(key: TabKey, active: boolean): string {
+  private iconFor(key: TabKey): string {
     switch (key) {
-      case 'home': return active ? '🏡' : '🏠'
-      case 'appointment': return active ? '🗓️' : '📅'
-      case 'ai': return active ? '🧠' : '🤖'
-      case 'mine': return active ? '🙂' : '👤'
-      default: return '🏠'
+      case 'home': return AppIcon.homeOutline
+      case 'appointment': return AppIcon.appointmentOutline
+      case 'ai': return AppIcon.aiOutline
+      case 'mine': return AppIcon.profileOutline
+      default: return AppIcon.homeOutline
     }
   }
 
   @Builder TabBuilder(key: TabKey, index: number) {
     Column() {
-      Text(this.iconFor(key, this.currentIndex === index))
-        .fontSize($r('app.float.fs_24'))
-        .margin({ bottom: 2 })
+      SymbolGlyph($r(this.iconFor(key)))
+        .fontSize(34)
+        .margin({ top: 8, bottom: 8 })
       Text(this.labelFor(key))
-        .fontSize($r('app.float.fs_12'))
+        .fontSize(20)
         .fontColor(this.currentIndex === index ? this.activeColor(key) : $r('app.color.text_hint'))
     }
     .width('100%')

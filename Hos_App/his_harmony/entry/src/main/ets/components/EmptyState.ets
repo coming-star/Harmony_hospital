@@ -5,12 +5,13 @@
  *   EmptyState({ hint: '还没有挂号记录', actionText: '去预约', onAction: ()=>router.pushUrl(...) })
  */
 import router from '@ohos.router'
+import { AppIcon } from '../utils/icons'
 
 @Component
 export struct EmptyState {
   @Prop hint: string = '暂无数据'
-  /** 表情符号占位（目前用文字符号代替图片，不占 apk 大小）*/
-  @Prop emoji: string = '📭'
+  /** symbol 资源字符串（从 AppIcon 引用，如 AppIcon.emptyBox）*/
+  @Prop icon: string = AppIcon.emptyBox
   /** 传了就显示动作按钮 */
   @Prop actionText: string = ''
   /** 不传动作又传了 routeTo，动作按钮就是跳某页面 */
@@ -26,12 +27,12 @@ export struct EmptyState {
 
   build() {
     Column() {
-      Text(this.emoji)
-        .fontSize($r('app.float.fs_32'))
+      SymbolGlyph($r(this.icon))
+        .fontSize(56)
         .margin({ bottom: $r('app.float.sp_8') })
 
       Text(this.hint)
-        .fontSize($r('app.float.fs_14'))
+        .fontSize(18)
         .fontColor($r('app.color.text_hint'))
         .margin({ bottom: $r('app.float.sp_16') })
 
@@ -40,7 +41,7 @@ export struct EmptyState {
           .height($r('app.float.btn_height_md'))
           .backgroundColor($r('app.color.primary'))
           .fontColor($r('app.color.text_white'))
-          .fontSize($r('app.float.fs_14'))
+          .fontSize(16)
           .padding({ left: $r('app.float.sp_20'), right: $r('app.float.sp_20') })
           .onClick(() => this.doAction())
       }

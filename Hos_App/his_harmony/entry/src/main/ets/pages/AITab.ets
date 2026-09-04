@@ -1,11 +1,12 @@
 /**
  * 【AI Tab】匹配参考图第三张：
- * 顶部蓝色 AppBar（"🤖 AI健康管家" + 右上 ⚙️ 齿轮图标）
+ * 顶部蓝色 AppBar（"AI健康管家" + 右上⚙️齿轮图标）
  * + "尚未配置AI接入信息，点击前往设置"灰色提示条
  * + 气泡对话（左侧 AI 蓝灰气泡 / 右侧用户 品牌蓝 气泡）
- * + 底部输入栏（灰底圆角输入框"输入你的问题…"+ 蓝色圆角纸飞机发送按钮）
+ * + 底部输入栏（灰底圆角输入框"输入你的问题…"+ 蓝色圆角发送按钮）
  */
 import { AppBar } from '../components/AppBar'
+import { AppIcon } from '../utils/icons'
 import { Format } from '../utils/format'
 import { Route } from '../utils/theme'
 import router from '@ohos.router'
@@ -41,7 +42,7 @@ export struct AITab {
     Row() {
       if (m.role === 'ai') {
         Column() { Text(m.content)
-            .fontSize(14).fontColor($r('app.color.text_primary'))
+            .fontSize(24).fontColor($r('app.color.text_primary'))
             .padding(14).maxLines(999) }
           .backgroundColor($r('app.color.bg_card'))
           .borderRadius($r('app.float.radius_md'))
@@ -50,7 +51,7 @@ export struct AITab {
       } else {
         Blank()
         Column() { Text(m.content)
-            .fontSize(14).fontColor($r('app.color.text_white'))
+            .fontSize(22).fontColor($r('app.color.text_white'))
             .padding(14).maxLines(999) }
           .backgroundColor($r('app.color.primary'))
           .borderRadius($r('app.float.radius_md'))
@@ -65,13 +66,15 @@ export struct AITab {
   build() {
     Column() {
       AppBar({ title: 'AI健康管家', hideBack: true,
-        rightIcon: '⚙️', onRightClick: () => { this.setupShow = !this.setupShow } })
+        rightIcon: AppIcon.settings, onRightClick: () => { this.setupShow = !this.setupShow } })
 
       // 设置提示条
       Row() {
-        Text('💡').fontSize(14).margin({right:8})
+        SymbolGlyph($r(AppIcon.lightbulb))
+          .fontSize(16)
+          .margin({right:8})
         Text('尚未配置AI接入信息，点击前往设置')
-          .fontSize(13).fontColor($r('app.color.text_secondary'))
+          .fontSize(21).fontColor($r('app.color.text_secondary'))
       }
       .width('92%').padding(12).margin({top:12, bottom:8})
       .backgroundColor($r('app.color.primary_light'))
@@ -91,13 +94,15 @@ export struct AITab {
           .backgroundColor($r('app.color.input_bg'))
           .borderRadius($r('app.float.radius_md'))
           .padding({left:14,right:14})
+          .fontSize(19)
           .placeholderColor($r('app.color.text_hint'))
           .onChange(v => this.input = v)
           .onSubmit(() => this.send())
 
         Stack({alignContent:Alignment.Center}) {
           Column().width(44).height(44).borderRadius(14).backgroundColor($r('app.color.primary'))
-          Text('✈').fontSize(22).fontColor($r('app.color.text_white'))
+          SymbolGlyph($r(AppIcon.send))
+            .fontSize(22)
         }
         .margin({left:12})
         .onClick(() => this.send())

@@ -13,7 +13,7 @@ export struct PrimaryButton {
   @Prop label: string = '按钮'
   @Prop variant: Variant = 'primary'
   @Prop isEnabled: boolean = true
-  @Prop btnHeight: number | string = 52
+  @Prop btnHeight: number | string = 60
   onTap?: () => void
 
   private bg(): ResourceColor {
@@ -37,7 +37,7 @@ export struct PrimaryButton {
   build() {
     Row() {
       Text(this.label)
-        .fontSize($r('app.float.fs_18'))
+        .fontSize($r('app.float.fs_24'))
         .fontWeight(600)
         .fontColor(this.isEnabled ? this.fg() : $r('app.color.text_white'))
         .opacity(this.isEnabled ? 1.0 : 0.55)

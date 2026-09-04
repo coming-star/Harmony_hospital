@@ -9,7 +9,9 @@
     { "name": "fs_16", "value": "16fp" },
     { "name": "fs_18", "value": "18fp" },
     { "name": "fs_20", "value": "20fp" },
+    { "name": "fs_22", "value": "22fp" },
     { "name": "fs_24", "value": "24fp" },
+    { "name": "fs_26", "value": "26fp" },
     { "name": "fs_28", "value": "28fp" },
     { "name": "fs_32", "value": "32fp" },
 
@@ -29,8 +31,8 @@
     { "name": "shadow_card",   "value": "2vp" },
     { "name": "shadow_modal",  "value": "8vp" },
 
-    { "name": "app_bar_height",   "value": "56vp" },
-    { "name": "tab_bar_height",   "value": "60vp" },
+    { "name": "app_bar_height",   "value": "65vp" },
+    { "name": "tab_bar_height",   "value": "70vp" },
     { "name": "btn_height_sm",    "value": "36vp" },
     { "name": "btn_height_md",    "value": "44vp" },
     { "name": "btn_height_lg",    "value": "52vp" }

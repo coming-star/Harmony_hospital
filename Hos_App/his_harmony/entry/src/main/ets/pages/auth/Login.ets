@@ -49,14 +49,14 @@ struct Login {
       Scroll() {
         Column() {
           // 听诊器大 logo
-          StethoscopeIcon({ iconSize: 108 }).margin({ top: 48, bottom: 24 })
-          Text('欢迎回来').fontSize(28).fontWeight(800).fontColor($r('app.color.text_primary'))
-            .margin({ bottom: 8 })
+          StethoscopeIcon({ customSize: 108 }).margin({ top: 36, bottom: 24 })
+          Text('欢迎回来').fontSize(32).fontWeight(800).fontColor($r('app.color.text_primary'))
+            .margin({ bottom: 10 })
           Text('登录东软云医院预约挂号系统')
-            .fontSize(15).fontColor($r('app.color.text_secondary'))
+            .fontSize(18).fontColor($r('app.color.text_secondary'))
             .margin({ bottom: 40 })
 
-          Column({ space: 20 }) {
+          Column({ space: 25 }) {
             GrayTextInput({
               label: '手机号',
               placeholder: '请输入手机号',
@@ -70,7 +70,7 @@ struct Login {
               type: InputType.Password,
               rightEye: true
             })
-          }.width('86%')
+          }.width('80%')
 
           // 协议 checkbox
           Row() {
@@ -79,21 +79,21 @@ struct Login {
               .selectedColor($r('app.color.primary'))
               .onChange(v => { this.agreed = v })
             Text('我已阅读并同意')
-              .fontSize(13).fontColor($r('app.color.text_secondary'))
+              .fontSize(20).fontColor($r('app.color.text_secondary'))
               .margin({ left: 6 })
-            Text('《用户协议》').fontSize(13).fontColor($r('app.color.text_blue'))
-            Text('与').fontSize(13).fontColor($r('app.color.text_secondary'))
-            Text('《隐私政策》').fontSize(13).fontColor($r('app.color.text_blue'))
+            Text('《用户协议》').fontSize(20).fontColor($r('app.color.text_blue'))
+            Text('与').fontSize(20).fontColor($r('app.color.text_secondary'))
+            Text('《隐私政策》').fontSize(20).fontColor($r('app.color.text_blue'))
           }
-          .width('86%').margin({ top: 16, bottom: 32 })
+          .width('80%').margin({ top: 20, bottom: 32 })
           .justifyContent(FlexAlign.Start)
 
           PrimaryButton({ label:'登录', isEnabled:!this.loading, onTap: () => this.submit() })
-            .width('86%').margin({ bottom: 16 })
+            .width('80%').margin({ bottom: 16 })
 
           Row() {
-            Text('还没有账号？').fontSize(14).fontColor($r('app.color.text_hint'))
-            Text('立即注册').fontSize(14).fontColor($r('app.color.text_blue')).fontWeight(600)
+            Text('还没有账号？').fontSize(20).fontColor($r('app.color.text_hint'))
+            Text('立即注册').fontSize(20).fontColor($r('app.color.text_blue')).fontWeight(600)
               .onClick(() => { try { router.pushUrl({ url: Route.REGISTER }) } catch (_) {} })
           }.margin({ top: 8, bottom: 40 })
         }

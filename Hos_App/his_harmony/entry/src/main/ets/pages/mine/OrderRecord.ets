@@ -6,6 +6,7 @@ import router from '@ohos.router'
 import { Format } from '../../utils/format'
 import { OrderStatusValue, OrderStatusText } from '../../types'
 import { Route } from '../../utils/theme'
+import { AppIcon } from '../../utils/icons'
 import { AppBar } from '../../components/AppBar'
 import type { OrderDetail, PageResult } from '../../types'
 import * as orderApi from '../../api/order'
@@ -113,7 +114,7 @@ struct OrderRecord {
           ListItem() {
             Column() {
               EmptyState({
-                hint: '还没有挂号记录', emoji:'📋',
+                hint: '还没有挂号记录', icon: AppIcon.message,
                 actionText: '去预约', routeTo: Route.APPOINTMENT
               })
             }.width('100%')
