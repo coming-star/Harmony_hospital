@@ -51,7 +51,7 @@ async function handleSubmit() {
           <el-input v-model="form.username" class="login-input" />
         </el-form-item>
         <el-form-item label="password" prop="password" class="login-form-item">
-          <el-input v-model="form.password" type="password" class="login-input" />
+          <el-input v-model="form.password" type="password" show-password class="login-input" />
         </el-form-item>
         <el-form-item class="login-btn-item">
           <el-button class="login-btn" :loading="loading" @click="handleSubmit">登录</el-button>

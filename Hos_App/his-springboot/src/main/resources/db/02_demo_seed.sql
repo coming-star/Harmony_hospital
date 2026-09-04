@@ -8,7 +8,7 @@
 
 USE neusoft_cloud_hospital;
 
-SET @bcrypt_password = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';
+SET @bcrypt_password = '$2b$10$6YeDXEfKU.6IwOn9rAXapedKtlK6gj22NqK3llEM22.de4vcQaPtC';
 SET @bcrypt_admin123 = '$2b$10$VDH7yRJcWzaT3chXGQo2DOCpksKEmbzKYLQ7M1uM0FITRYAgoO3Jm';
 
 INSERT IGNORE INTO sys_user
