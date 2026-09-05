@@ -1,12 +1,18 @@
 import { get, post } from '../utils/request'
 
+/** 单条对话消息（角色：user 用户 / assistant AI）*/
+export interface ChatMessageItem {
+  role: 'user' | 'assistant'
+  content: string
+}
+
 export interface ChatMessageIn {
-  /** 用户输入的自然语言文本 */
-  prompt: string
+  /** 多轮对话历史（含最新一条用户消息），按时间升序 */
+  messages: ChatMessageItem[]
 }
 
 export interface ChatMessageOut {
-  /** AI 回复内容（非流式一次性返回完整答案；流式后续改 SSE/WebSocket）*/
+  /** AI 回复内容（非流式一次性返回）*/
   reply: string
   conversationId?: string
 }
@@ -17,11 +23,11 @@ export interface ConversationItem {
   updatedAt: string
 }
 
-/** 发送一句话给 AI 导诊（本期：先 mock 非流式）*/
+/** 发送多轮对话给 AI 导诊（返回 AI 回复）*/
 export function aiChat(body: ChatMessageIn): Promise<ChatMessageOut> {
   return post<ChatMessageOut>('/api/ai/chat', body, { loading: true })
 }
-/** 会话历史列表 */
+/** 会话历史列表（后端本期未持久化，暂不调用）*/
 export function aiConversations(): Promise<ConversationItem[]> {
   return get<ConversationItem[]>('/api/ai/conversations')
 }
