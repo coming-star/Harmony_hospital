@@ -1,7 +1,7 @@
 /**
  * 【订单确认】交付负责人：成员 C
  * 入参：slotId（必填）、contactId（必填）
- * 流程：确认信息 → 立即支付（createOrder → payOrder）→ 成功跳 BookingSuccess
+ * 流程：确认信息 → 确认预约（createOrder，延后支付）→ 成功跳 BookingSuccess
  */
 import router from '@ohos.router'
 import type { OrderDetail, SlotSummary, PatientContact, CreateOrderRequest } from '../../types'
