@@ -57,3 +57,9 @@ app:
   jwt:
     secret: NeusoftCloudHospitalJwtSecretKey2026!
     expire-hours: 24
+  ai:
+    deepseek:
+      # DeepSeek API Key：优先读环境变量 DEEPSEEK_API_KEY；不设置时接口会提示未配置。
+      api-key: ${DEEPSEEK_API_KEY:}
+      base-url: https://api.deepseek.com
+      model: deepseek-chat

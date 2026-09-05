@@ -19,6 +19,7 @@ const K_TOKEN = 'access_token'
 const K_USER_ID = 'user_id'
 const K_NICK = 'nickname'
 const K_USER_TYPE = 'user_type'
+const K_PHONE = 'phone'
 
 export class UserStore {
   private static _i: UserStore | null = null
@@ -31,6 +32,7 @@ export class UserStore {
   private _token: string = ''
   private _userId: number = 0
   private _nickname: string = ''
+  private _phone: string = ''
   private _userType: UserType | '' = ''
 
   /** 是否已完成异步初始化 */
@@ -56,6 +58,7 @@ export class UserStore {
     const uid: number | string = await this.prefs.get(K_USER_ID, 0) as number | string
     this._userId   = typeof uid === 'number' ? uid : parseInt(String(uid), 10) || 0
     this._nickname = String((await this.prefs.get(K_NICK, '')) ?? '')
+    this._phone = String((await this.prefs.get(K_PHONE, '')) ?? '')
     this._userType = (String((await this.prefs.get(K_USER_TYPE, '')) ?? '')) as UserType | ''
     this.inited = true
   }
@@ -64,6 +67,7 @@ export class UserStore {
   get token(): string { return this._token }
   get userId(): number { return this._userId }
   get nickname(): string { return this._nickname }
+  get phone(): string { return this._phone }
   get userType(): UserType | '' { return this._userType }
 
   isLoggedIn(): boolean { return !!this._token && this._userId > 0 }
@@ -74,11 +78,13 @@ export class UserStore {
     this._token = login.accessToken
     this._userId = Number(login.userId)
     this._nickname = login.nickname
+    this._phone = login.phone ?? ''
     this._userType = login.userType
     if (this.prefs) {
       await this.prefs.put(K_TOKEN, this._token)
       await this.prefs.put(K_USER_ID, this._userId)
       await this.prefs.put(K_NICK, this._nickname)
+      await this.prefs.put(K_PHONE, this._phone)
       await this.prefs.put(K_USER_TYPE, this._userType)
       await this.prefs.flush()
     }
@@ -98,11 +104,13 @@ export class UserStore {
     this._token = ''
     this._userId = 0
     this._nickname = ''
+    this._phone = ''
     this._userType = ''
     if (this.prefs) {
       this.prefs.delete(K_TOKEN)
       this.prefs.delete(K_USER_ID)
       this.prefs.delete(K_NICK)
+      this.prefs.delete(K_PHONE)
       this.prefs.delete(K_USER_TYPE)
       this.prefs.flushSync?.()
     }

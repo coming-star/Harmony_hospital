@@ -7,7 +7,7 @@
 export class AppIcon {
   static readonly homeOutline: string = 'sys.symbol.house'
   static readonly appointmentOutline: string = 'sys.symbol.calendar'
-  static readonly aiOutline: string = 'sys.symbol.cpu'
+  static readonly aiOutline: string = 'sys.symbol.ellipsis_bubble'
   static readonly profileOutline: string = 'sys.symbol.person'
   static readonly settings: string = 'sys.symbol.gearshape'
   static readonly search: string = 'sys.symbol.magnifyingglass'
@@ -20,4 +20,5 @@ export class AppIcon {
   static readonly delete: string = 'sys.symbol.trash'
   static readonly edit: string = 'sys.symbol.pencil'
   static readonly message: string = 'sys.symbol.message'
+
 }

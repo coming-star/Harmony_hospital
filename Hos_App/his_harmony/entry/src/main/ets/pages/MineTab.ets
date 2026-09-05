@@ -10,6 +10,7 @@ import userStore from '../store/UserStore'
 import { AvatarIcon } from '../components/AvatarIcon'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { AppIcon } from '../utils/icons'
+import { Format } from '../utils/format'
 import { Route } from '../utils/theme'
 
 interface EntryRow {
@@ -28,6 +29,8 @@ interface InfoRow {
 @Component
 export struct MineTab {
   @State logoutShow: boolean = false
+  @State nickname: string = ''
+  @State phone: string = ''
   private readonly entries: EntryRow[] = [
     { key:'orders',   icon: AppIcon.message, title:'挂号记录',     sub:'查看历史挂号',           route: Route.ORDER_RECORD },
     { key:'contacts', icon: AppIcon.profileOutline, title:'就诊人管理',   sub:'管理绑定就诊人',           route: Route.CONTACT_MGNT },
@@ -43,6 +46,11 @@ export struct MineTab {
     try { router.pushUrl({ url: r.route }) } catch (_) {}
   }
 
+  aboutToAppear(): void {
+    this.nickname = userStore.nickname
+    this.phone = userStore.phone
+  }
+
   @Builder BlueTopHeader() {
     Stack({alignContent:Alignment.Center}) {
       Column()
@@ -50,12 +58,12 @@ export struct MineTab {
         .backgroundColor($r('app.color.primary'))
 
       Row() {
-        AvatarIcon({ name: userStore.nickname || '健康用户', iconSize: 72, bg: $r('app.color.primary_light') })
+        AvatarIcon({ name: this.nickname || '健康用户', iconSize: 72, bg: $r('app.color.primary_light') })
         Column() {
-          Text(userStore.nickname ? userStore.nickname : '健康用户')
+          Text(this.nickname ? this.nickname : '健康用户')
             .fontSize(28).fontWeight(800).fontColor($r('app.color.text_white'))
           if (userStore.isLoggedIn()) {
-            Text(`手机号 ${userStore.token ? '186****3116' : ''}`)
+            Text(this.phone ? `手机号 ${Format.maskPhone(this.phone)}` : '')
               .fontSize(20).fontColor('#CCFFFFFF').margin({top:6})
           } else {
             Text('未登录，点击这里登录').fontSize(20).fontColor('#CCFFFFFF')

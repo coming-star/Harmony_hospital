@@ -99,6 +99,7 @@ public class AuthService {
                 "Bearer",
                 user.getId(),
                 user.getNickname(),
+                user.getPhone(),
                 user.getUserType()
         );
     }
