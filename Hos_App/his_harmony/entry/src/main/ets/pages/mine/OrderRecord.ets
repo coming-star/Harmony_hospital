@@ -15,7 +15,7 @@ import { StatusTag } from '../../components/StatusTag'
 import { FeeTag } from '../../components/FeeTag'
 import { EmptyState } from '../../components/EmptyState'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
-import { promptAction } from '@kit.ArkUI'
+import { showToast } from '../../utils/toast'
 
 interface TabItem {
   key: string
@@ -37,7 +37,8 @@ struct OrderRecord {
   @State pageSize: number = 20
   @State list: OrderDetail[] = []
   @State total: number = 0
-  @State expandId: number = 0
+  /** 展开详情的订单 ID（字符串，防精度丢失） */
+  @State expandId: string = ''
   @State cancelShow: boolean = false
   @State cancelTarget: OrderDetail | undefined = undefined
   @State cancelLoading: boolean = false
@@ -63,7 +64,7 @@ struct OrderRecord {
   async pay(o: OrderDetail): Promise<void> {
     try {
       await orderApi.payOrder(o.id)
-      promptAction.showToast({ message:'支付成功' })
+      showToast('支付成功')
       await this.reload()
     } catch (_) {}
   }
@@ -73,7 +74,7 @@ struct OrderRecord {
     this.cancelLoading = true
     try {
       await orderApi.cancelOrder(this.cancelTarget.id)
-      promptAction.showToast({ message:'已取消' })
+      showToast('已取消')
       this.cancelShow = false
       await this.reload()
     } catch (_) {}
@@ -81,14 +82,18 @@ struct OrderRecord {
   }
 
   @Builder cancelDialog() {
-    ConfirmDialog({
-      title: '取消预约',
-      message: this.cancelTarget ? `确定要取消「${this.cancelTarget.departmentName}」的预约吗？` : '确定要取消该预约吗？',
-      danger: true,
-      confirmText: '确定取消',
-      onConfirm: () => this.confirmCancel(),
-      onCancel: () => { this.cancelShow = false }
-    })
+    // 包一层撑满 sheet 的居中容器，修复弹窗内容偏上
+    Column() {
+      ConfirmDialog({
+        title: '取消预约',
+        message: this.cancelTarget ? `确定要取消「${this.cancelTarget.departmentName}」的预约吗？` : '确定要取消该预约吗？',
+        danger: true,
+        confirmText: '确定取消',
+        onConfirm: () => this.confirmCancel(),
+        onCancel: () => { this.cancelShow = false }
+      })
+    }
+    .width('100%').height('100%').justifyContent(FlexAlign.Center)
   }
 
   build() {
@@ -151,7 +156,7 @@ struct OrderRecord {
                 Text(this.expandId===o.id ? '收起详情' : '查看详情')
                   .fontSize(17).fontColor($r('app.color.text_hint'))
                   .padding(8).layoutWeight(1)
-                  .onClick(() => { this.expandId = this.expandId===o.id ? 0 : o.id })
+                  .onClick(() => { this.expandId = this.expandId===o.id ? '' : o.id })
                 // 待支付 → 立即支付
                 if (o.status === OrderStatusValue.PENDING_PAYMENT) {
                   Button('取消预约').height(40).backgroundColor($r('app.color.disabled_light'))
@@ -186,7 +191,7 @@ struct OrderRecord {
       }.layoutWeight(1).width('100%')
     }
     .width('100%').height('100%').backgroundColor($r('app.color.bg_page'))
-    .bindSheet($$this.cancelShow, this.cancelDialog(), { height: 280, preferType: SheetType.CENTER, showClose: false, dragBar: true })
+    .bindSheet($$this.cancelShow, this.cancelDialog(), { height: 280, preferType: SheetType.CENTER, showClose: false, dragBar: true, backgroundColor: $r('app.color.sheet_bg') })
   }
 
   @Builder R(k: string, v: string) {

@@ -9,11 +9,12 @@ import { StethoscopeIcon } from '../../components/StethoscopeIcon'
 import { GrayTextInput } from '../../components/GrayTextInput'
 import { PrimaryButton } from '../../components/PrimaryButton'
 import router from '@ohos.router'
-import { promptAction } from '@kit.ArkUI'
+import { showToast } from '../../utils/toast'
 import userStore from '../../store/UserStore'
 import { Route } from '../../utils/theme'
 import * as authApi from '../../api/auth'
 import type { AppLoginRequest, LoginResponse } from '../../types'
+import { inputMethod } from '@kit.IMEKit'
 
 @Entry
 @Component
@@ -24,9 +25,9 @@ struct Login {
   @State loading: boolean = false
 
   private validate(): boolean {
-    if (!/^1[3-9]\d{9}$/.test(this.phone)) { promptAction.showToast({ message:'请输入正确的手机号' }); return false }
-    if (this.password.length < 6) { promptAction.showToast({ message:'密码至少 6 位' }); return false }
-    if (!this.agreed) { promptAction.showToast({ message:'请先阅读并同意《用户协议》与《隐私政策》' }); return false }
+    if (!/^1[3-9]\d{9}$/.test(this.phone)) { showToast('请输入正确的手机号'); return false }
+    if (this.password.length < 6) { showToast('密码至少 6 位'); return false }
+    if (!this.agreed) { showToast('请先阅读并同意《用户协议》与《隐私政策》'); return false }
     return true
   }
   private async submit(): Promise<void> {
@@ -36,7 +37,7 @@ struct Login {
       const body: AppLoginRequest = { phone: this.phone, password: this.password }
       const r: LoginResponse = await authApi.login(body)
       await userStore.setLogin(r)
-      promptAction.showToast({ message:'登录成功' })
+      showToast('登录成功')
       router.replaceUrl({ url: Route.HOME })
     } catch (_) {}
     finally { this.loading = false }
@@ -98,6 +99,8 @@ struct Login {
         }
         .width('100%').alignItems(HorizontalAlign.Center)
       }.layoutWeight(1).scrollBar(BarState.Off)
+       // 点击表单外的空白区收起软键盘（输入框自身已拦截冒泡）
+       .onClick(() => { inputMethod.getController().hideTextInput() })
     }
     .width('100%').height('100%').backgroundColor(Color.White)
   }

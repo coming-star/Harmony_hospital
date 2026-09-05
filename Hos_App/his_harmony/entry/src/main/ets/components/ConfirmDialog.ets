@@ -13,7 +13,7 @@
  *     onConfirm: () => userStore.logout()
  *   })
  */
-import { promptAction } from '@kit.ArkUI'
+import { showToast } from '../utils/toast'
 
 @Component
 export struct ConfirmDialog {
@@ -29,7 +29,7 @@ export struct ConfirmDialog {
   private ok(): void {
     try {
       if (this.onConfirm) this.onConfirm()
-      else promptAction.showToast({ message: this.confirmText })
+      else showToast(this.confirmText)
     } catch (_) {}
   }
   private no(): void {
@@ -49,13 +49,12 @@ export struct ConfirmDialog {
         .fontColor($r('app.color.text_secondary'))
         .textAlign(TextAlign.Center)
         .margin({ left: 20, right: 20, bottom: 28 })
-        .layoutWeight(1)
 
       Row() {
         Button(this.cancelText, { type: ButtonType.Normal })
           .layoutWeight(1)
           .height(48)
-          .backgroundColor($r('app.color.bg_page'))
+          .backgroundColor($r('app.color.bg_card'))
           .fontColor($r('app.color.text_secondary'))
           .fontSize(22)
           .margin({ right: 12 })
@@ -73,7 +72,7 @@ export struct ConfirmDialog {
       .padding({ left: 20, right: 20, bottom: 20 })
     }
     .width('85%')
-    .backgroundColor($r('app.color.bg_card'))
+    .backgroundColor($r('app.color.sheet_bg'))
     .borderRadius($r('app.float.radius_lg'))
   }
 }

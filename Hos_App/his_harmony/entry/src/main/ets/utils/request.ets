@@ -3,10 +3,10 @@
  * ArkTS 严格子集合规版：裸 catch、Map 传参、无索引签名/中括号访问/any/unknown/交叉类型。
  */
 import { http } from '@kit.NetworkKit'
-import { promptAction } from '@kit.ArkUI'
 import router from '@ohos.router'
 import { UserStore } from '../store/UserStore'
 import { Route } from './theme'
+import { showToast } from './toast'
 
 /** 后端地址：
  *  预览器用 127.0.0.1:8081；真机改成电脑局域网 IP:8081（如 http://192.168.1.100:8081）；
@@ -39,18 +39,12 @@ export interface ApiResponse<T> {
 }
 
 function toast(msg: string, duration: number = 1500): void {
-  try {
-    promptAction.showToast({ message: msg, duration: duration })
-  } catch (e) {
-  }
+  showToast(msg, duration)
 }
 
 function showLoading(on: boolean): void {
   if (!on) return
-  try {
-    promptAction.showToast({ message: '加载中…' })
-  } catch (e) {
-  }
+  showToast('加载中…')
 }
 
 /** 固定请求头：Content-Type / Accept / Authorization（带 token 才填 Authorization）。

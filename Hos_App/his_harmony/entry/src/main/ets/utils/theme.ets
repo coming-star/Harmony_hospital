@@ -55,6 +55,7 @@ export class Route {
   static readonly DOCTOR_LIST   = 'pages/appointment/DoctorList'
   static readonly CONTACT_SELECT= 'pages/appointment/ContactSelect'
   static readonly ORDER_CONFIRM = 'pages/appointment/OrderConfirm'
+  static readonly PAY           = 'pages/appointment/PayPage'
   static readonly BOOK_SUCCESS  = 'pages/appointment/BookingSuccess'
   static readonly AI_CHAT       = 'pages/ai/AIChat'
   static readonly MINE          = 'pages/mine/MineIndex'

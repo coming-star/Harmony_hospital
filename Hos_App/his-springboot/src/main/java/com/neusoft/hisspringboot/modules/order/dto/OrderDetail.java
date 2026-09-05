@@ -1,6 +1,8 @@
 package com.neusoft.hisspringboot.modules.order.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -8,10 +10,12 @@ import java.time.LocalTime;
 
 /**
  * 挂号订单详情（列表和详情接口共用），医生/科室/号别名称为下单时快照。
+ * 注意：id/slotId 为雪花大整数，必须序列化成字符串返回，否则前端 JS 解析会丢精度。
  */
 @Schema(description = "挂号订单详情")
 public record OrderDetail(
         @Schema(description = "订单ID", example = "70001")
+        @JsonSerialize(using = ToStringSerializer.class)
         Long id,
 
         @Schema(description = "订单号", example = "SEED70001")
@@ -22,6 +26,7 @@ public record OrderDetail(
         String status,
 
         @Schema(description = "号源ID", example = "601031")
+        @JsonSerialize(using = ToStringSerializer.class)
         Long slotId,
 
         @Schema(description = "医生ID", example = "4001")

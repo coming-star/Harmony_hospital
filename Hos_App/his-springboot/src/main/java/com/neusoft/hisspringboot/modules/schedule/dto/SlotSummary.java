@@ -1,6 +1,8 @@
 package com.neusoft.hisspringboot.modules.schedule.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
@@ -12,6 +14,7 @@ import java.time.LocalTime;
 @Schema(description = "号源摘要")
 public record SlotSummary(
         @Schema(description = "号源ID（下单时传 slotId）", example = "601031")
+        @JsonSerialize(using = ToStringSerializer.class)
         Long slotId,
 
         @Schema(description = "医生ID", example = "4001")

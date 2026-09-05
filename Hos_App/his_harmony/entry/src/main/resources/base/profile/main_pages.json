@@ -8,6 +8,7 @@
     "pages/appointment/DoctorList",
     "pages/appointment/ContactSelect",
     "pages/appointment/OrderConfirm",
+    "pages/appointment/PayPage",
     "pages/appointment/BookingSuccess",
     "pages/ai/AIChat",
     "pages/mine/MineIndex",

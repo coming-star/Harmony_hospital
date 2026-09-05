@@ -1,7 +1,7 @@
 /**
  * 【订单确认】交付负责人：成员 C
  * 入参：slotId（必填）、contactId（必填）
- * 流程：确认信息 → 确认预约（createOrder，延后支付）→ 成功跳 BookingSuccess
+ * 流程：确认信息 → 确认订单（createOrder，订单为待支付）→ 收银台 PayPage 模拟支付 → 支付成功跳 BookingSuccess
  */
 import router from '@ohos.router'
 import type { OrderDetail, SlotSummary, PatientContact, CreateOrderRequest } from '../../types'
@@ -14,21 +14,21 @@ import { AppBar } from '../../components/AppBar'
 import { PrimaryButton } from '../../components/PrimaryButton'
 import { Format } from '../../utils/format'
 import { Route } from '../../utils/theme'
-import { promptAction } from '@kit.ArkUI'
 
 @Entry
 @Component
 struct OrderConfirm {
-  @State slotId: number = 0
-  @State contactId: number = 0
+  /** 雪花大整数 ID 按字符串传递，禁止 Number() 转换（会丢精度） */
+  @State slotId: string = ''
+  @State contactId: string = ''
   @State slot: SlotSummary | undefined = undefined
   @State contact: PatientContact | undefined = undefined
-  @State paying: boolean = false
+  @State submitting: boolean = false
 
   async aboutToAppear(): Promise<void> {
     const p: Record<string, Object> | undefined = router.getParams() as Record<string, Object> | undefined
     if (!p) return
-    this.slotId = Number(p['slotId']); this.contactId = Number(p['contactId'])
+    this.slotId = String(p['slotId'] ?? ''); this.contactId = String(p['contactId'] ?? '')
     // 从路由参数恢复号源信息（前端传参，绕开"后端无按 slotId 查号源接口"）
     if (p['doctorName']) {
       this.slot = {
@@ -49,9 +49,9 @@ struct OrderConfirm {
     this.contact = contacts.find((c: PatientContact) => c.id === this.contactId)
   }
 
-  private async pay(): Promise<void> {
-    if (this.paying) return
-    this.paying = true
+  private async submitOrder(): Promise<void> {
+    if (this.submitting) return
+    this.submitting = true
     try {
       const req: CreateOrderRequest = {
         slotId: this.slotId,
@@ -59,11 +59,14 @@ struct OrderConfirm {
         idempotencyKey: Format.uuid()
       }
       const created: OrderDetail = await orderApi.createOrder(req)
-      const paid: OrderDetail = await orderApi.payOrder(created.id)
-      // 到预约成功页
-      router.replaceUrl({ url: Route.BOOK_SUCCESS, params: { orderId: String(paid.id) } })
+      // 订单创建成功（待支付）→ 跳收银台支付；返回则保持待支付，可稍后在挂号记录里支付
+      router.pushUrl({ url: Route.PAY, params: {
+        orderId: String(created.id),
+        orderNo: created.orderNo,
+        amountFen: created.amountFen
+      } })
     } catch (e) { /* toast 已弹 */ }
-    finally { this.paying = false }
+    finally { this.submitting = false }
   }
 
   build() {
@@ -107,7 +110,7 @@ struct OrderConfirm {
           Text('支付金额').fontSize(22).fontColor($r('app.color.text_hint'))
           if (this.slot) { FeeTag({ fen: this.slot.feeFen, type:'danger', iconSize:'lg' }).margin({top:4}) }
         }.alignItems(HorizontalAlign.Start).layoutWeight(1)
-        PrimaryButton({ label:'立即支付', isEnabled:!this.paying, onTap:() => this.pay() }).width(180)
+        PrimaryButton({ label:'确认订单', isEnabled:!this.submitting, onTap:() => this.submitOrder() }).width(180)
       }
       .width('100%').padding(18)
       .backgroundColor($r('app.color.bg_card'))

@@ -3,6 +3,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { window } from '@kit.ArkUI';
 // 块 A：全局登录态 Store 初始化（onCreate 用 Ability 级 Context 提前启动 Preferences 持久化）
 import userStore from '../store/UserStore';
+import { registerMainWindow } from '../utils/toast';
 
 const DOMAIN = 0x0000;
 
@@ -29,7 +30,17 @@ export default class EntryAbility extends UIAbility {
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
     // Main window is created, set main page for this ability
-    hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageCreate');
+    hilog.info(DOMAIN, 'testTag', 'Ability onWindowStageCreate');
+
+    // 注：本 SDK 的 KeyboardAvoidMode 只有 DEFAULT/NONE，无 RESIZE。
+    // AI 聊天页的键盘避让改由 AITab 内用 expandSafeArea(KEYBOARD) 处理。
+
+    // 注册主窗口：utils/toast 自定义大字号提示需要用它获取 UIContext
+    try {
+      registerMainWindow(windowStage.getMainWindowSync());
+    } catch (err) {
+      hilog.error(DOMAIN, 'testTag', 'registerMainWindow failed: %{public}s', JSON.stringify(err));
+    }
 
     windowStage.loadContent('pages/Index', (err) => {
       if (err.code) {

@@ -202,7 +202,8 @@ export interface DoctorDetailResponse {
 }
 
 export interface SlotSummary {
-  slotId: number
+  /** 雪花大整数 ID，后端以字符串返回，前端必须全程按 string 传递（禁止 Number() 转换） */
+  slotId: string
   doctorId: number
   doctorName: string
   departmentId: number
@@ -221,7 +222,8 @@ export interface SlotSummary {
 
 // ============== 就诊人 ==============
 export interface PatientContact {
-  id: number
+  /** 雪花大整数 ID，后端以字符串返回，前端必须全程按 string 传递（禁止 Number() 转换） */
+  id: string
   userId: number
   name: string
   phone: string
@@ -240,19 +242,20 @@ export interface ContactRequest {
 
 // ============== 订单 ==============
 export interface CreateOrderRequest {
-  /** 号源 ID：号源查询返回的 slotId */
-  slotId: number
-  /** 就诊人 ID：就诊人列表返回的 id */
-  contactId: number
+  /** 号源 ID：号源查询返回的 slotId（字符串，防精度丢失） */
+  slotId: string
+  /** 就诊人 ID：就诊人列表返回的 id（字符串，防精度丢失） */
+  contactId: string
   /** 幂等键：客户端生成 UUID（调用 Format.uuid()）*/
   idempotencyKey: string
 }
 
 export interface OrderDetail {
-  id: number
+  /** 订单 ID（字符串，防精度丢失） */
+  id: string
   orderNo: string
   status: OrderStatus
-  slotId: number
+  slotId: string
   doctorId: number
   doctorName: string
   departmentId: number

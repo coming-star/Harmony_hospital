@@ -9,6 +9,7 @@ import { AppIcon } from '../utils/icons'
 import { Format } from '../utils/format'
 import * as aiApi from '../api/ai'
 import type { ChatMessageItem } from '../api/ai'
+import { inputMethod } from '@kit.IMEKit'
 
 interface Msg { id: string; role: 'user'|'ai'; content: string }
 
@@ -77,6 +78,10 @@ export struct AITab {
           ListItem() { this.Bubble(m) }.width('100%')
         }, (m: Msg) => m.id)
       }.layoutWeight(1).padding({top:8,bottom:8}).scrollBar(BarState.Off)
+       // 对话区豁免键盘避让：键盘弹出时只有输入栏上移，列表不再被整体顶上去
+       .expandSafeArea([SafeAreaType.KEYBOARD], [SafeAreaEdge.BOTTOM])
+       // 点击对话空白区收起软键盘
+       .onClick(() => { inputMethod.getController().hideTextInput() })
 
       // 底部输入栏（参考图同款：灰输入框 + 蓝圆角发送按钮）
       Row() {

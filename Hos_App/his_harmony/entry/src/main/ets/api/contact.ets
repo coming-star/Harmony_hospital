@@ -5,9 +5,9 @@ import type { PatientContact, ContactRequest } from '../types'
 export function listContacts(): Promise<PatientContact[]> {
   return get<PatientContact[]>('/api/contacts')
 }
-/** 新增就诊人 → 返回新建 id { contactId } */
+/** 新增就诊人 → 返回新建 id { contactId }（字符串，防精度丢失） */
 export interface ContactId {
-  contactId: number
+  contactId: string
 }
 
 export function createContact(body: ContactRequest): Promise<ContactId> {

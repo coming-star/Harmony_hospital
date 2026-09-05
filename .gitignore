@@ -5,3 +5,7 @@
 # 常见系统/编辑器垃圾文件
 .DS_Store
 Thumbs.db
+
+# hvigor 本地构建缓存（DevEco 在根目录打开时生成）
+.hvigor-home/
+.hvigor/

@@ -12,12 +12,13 @@ import { PrimaryButton } from '../../components/PrimaryButton'
 import { Route } from '../../utils/theme'
 import { RelationValue, relationText } from '../../types'
 import { RelationList } from '../../types'
-import { promptAction } from '@kit.ArkUI'
+import { showToast } from '../../utils/toast'
 
 @Entry
 @Component
 struct ContactSelect {
-  @State slotId: number = 0
+  /** 雪花大整数 ID 按字符串传递，禁止 Number() 转换（会丢精度） */
+  @State slotId: string = ''
   @State doctorName: string = ''
   @State levelName: string = ''
   @State feeFen: number = 0
@@ -25,7 +26,7 @@ struct ContactSelect {
   @State startTime: string = ''
   @State endTime: string = ''
   @State list: PatientContact[] = []
-  @State selectedId: number = 0
+  @State selectedId: string = ''
   @State addSheet: boolean = false
   @State addName: string = ''
   @State addPhone: string = ''
@@ -34,7 +35,7 @@ struct ContactSelect {
   async aboutToAppear(): Promise<void> {
     const p: Record<string, Object> | undefined = router.getParams() as Record<string, Object> | undefined
     if (p) {
-      if (p['slotId']) this.slotId = Number(p['slotId'])
+      if (p['slotId']) this.slotId = String(p['slotId'])
       this.doctorName = String(p['doctorName'] ?? '')
       this.levelName = String(p['levelName'] ?? '')
       this.feeFen = Number(p['feeFen'] ?? 0)
@@ -48,7 +49,7 @@ struct ContactSelect {
     try { this.list = await contactApi.listContacts() } catch (_) {}
   }
   private goConfirm(): void {
-    if (!this.selectedId) { promptAction.showToast({ message: '请选择就诊人' }); return }
+    if (!this.selectedId) { showToast('请选择就诊人'); return }
     router.pushUrl({ url: Route.ORDER_CONFIRM, params: {
       slotId: this.slotId,
       doctorName: this.doctorName,
@@ -61,8 +62,8 @@ struct ContactSelect {
     } })
   }
   private async submitAdd(): Promise<void> {
-    if (!this.addName.trim()) { promptAction.showToast({ message:'请输入姓名' }); return }
-    if (!/^1\d{10}$/.test(this.addPhone)) { promptAction.showToast({ message:'手机号格式错误' }); return }
+    if (!this.addName.trim()) { showToast('请输入姓名'); return }
+    if (!/^1\d{10}$/.test(this.addPhone)) { showToast('手机号格式错误'); return }
     const body: ContactRequest = { name: this.addName, phone: this.addPhone, relation: this.addRelation }
     try {
       const r = await contactApi.createContact(body)

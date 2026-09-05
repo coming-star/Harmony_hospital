@@ -89,8 +89,8 @@ export struct DepartmentAccordion {
                 Column() {
                   Row() {
                     Stack() {
-                      Circle().width(56).height(56).borderRadius(14).backgroundColor($r('app.color.primary_light'))
-                      StethoscopeIcon({ customSize: 52, color: $r('app.color.primary') })
+                      Circle().width(54).height(54).borderRadius(14).backgroundColor($r('app.color.primary_light'))
+                      StethoscopeIcon({ customSize: 54, color: $r('app.color.primary') })
                     }.margin({ right: 14 })
                     Column() {
                       Text(l1.name)

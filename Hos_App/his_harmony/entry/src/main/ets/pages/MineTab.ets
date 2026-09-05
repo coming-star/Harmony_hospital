@@ -34,7 +34,7 @@ export struct MineTab {
   private readonly entries: EntryRow[] = [
     { key:'orders',   icon: AppIcon.message, title:'挂号记录',     sub:'查看历史挂号',           route: Route.ORDER_RECORD },
     { key:'contacts', icon: AppIcon.profileOutline, title:'就诊人管理',   sub:'管理绑定就诊人',           route: Route.CONTACT_MGNT },
-    { key:'ai',       icon: AppIcon.settings, title:'AI管家设置',   sub:'配置AI接入信息' }
+    { key:'settings', icon: AppIcon.settings, title:'设置',       sub:'通用 · 关于 · 退出登录',  route: Route.SETTINGS }
   ]
   private readonly systemInfos: InfoRow[] = [
     { key:'系统名称', value:'东软云医院预约挂号系统' },

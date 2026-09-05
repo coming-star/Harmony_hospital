@@ -17,10 +17,13 @@ import { EmptyState } from '../components/EmptyState'
 import { StethoscopeIcon } from '../components/StethoscopeIcon'
 import type { DepartmentTreeNode, QuickEntryItem } from '../types'
 import * as deptApi from '../api/department'
+import { window } from '@kit.ArkUI'
 
 @Component
 export struct HomeTab {
   @State departments: DepartmentTreeNode[] = []
+  /** 状态栏高度（vp）：蓝色顶栏沉浸到状态栏时给标题让位 */
+  @State statusBarHeight: number = 0
   private readonly entries: QuickEntryItem[] = [
     { key:'book',   label:'在线挂号', iconFont: AppIcon.appointmentOutline, route: Route.DEPT_SELECT },
     { key:'orders', label:'挂号记录', iconFont: AppIcon.message, route: Route.ORDER_RECORD },
@@ -29,6 +32,10 @@ export struct HomeTab {
   ]
 
   async aboutToAppear(): Promise<void> {
+    try {
+      const win = await window.getLastWindow(getContext(this))
+      this.statusBarHeight = px2vp(win.getWindowAvoidArea(window.AvoidAreaType.TYPE_SYSTEM).topRect.height)
+    } catch (_) {}
     try { this.departments = await deptApi.getDepartmentTree() } catch (_) {}
   }
 
@@ -49,7 +56,7 @@ export struct HomeTab {
           Text('东软云医院').fontSize(32).fontWeight(800).fontColor($r('app.color.text_white'))
           Text('预约挂号 · 健康管理').fontSize(20).fontColor('#CCFFFFFF').margin({ top: 6 })
         }.layoutWeight(1).alignItems(HorizontalAlign.Start)
-      }.width('100%').padding({ top: 4, left: 20, right: 20, bottom: 16 })
+      }.width('100%').padding({ top: this.statusBarHeight + 4, left: 20, right: 20, bottom: 16 })
 
       // 白色大圆角搜索框
       Row() {
@@ -161,15 +168,21 @@ export struct HomeTab {
   }
 
   build() {
-    Scroll() {
-      Column() {
-        this.TopBlueHeader()
-        this.Banner()
-        this.QuickEntries()
-        this.HotDepts()
-        Blank().height(40)
-      }.width('100%')
+    Column() {
+      // 顶栏固定在 Scroll 之外：Scroll 会裁剪子组件，导致 expandSafeArea 无法延伸到状态栏（顶部留白根因）
+      this.TopBlueHeader()
+
+      Scroll() {
+        Column() {
+          this.Banner()
+          this.QuickEntries()
+          this.HotDepts()
+          Blank().height(40)
+        }.width('100%')
+      }
+      .width('100%').layoutWeight(1).scrollBar(BarState.Off)
     }
-    .width('100%').height('100%').scrollBar(BarState.Off).backgroundColor($r('app.color.bg_page'))
+    .width('100%').height('100%')
+    .backgroundColor($r('app.color.bg_page'))
   }
 }

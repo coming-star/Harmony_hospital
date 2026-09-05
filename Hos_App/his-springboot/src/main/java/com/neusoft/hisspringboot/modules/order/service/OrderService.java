@@ -356,13 +356,15 @@ public class OrderService {
     }
 
     private OrderDetail cancelInternal(Long orderId, String cancelSource) {
+        // 待支付/已支付均可取消（已支付取消 = 退号，模拟环境直接释放号源，不生成退款流水）；
+        // 条件更新保证并发下的状态安全：只有仍是这两种状态时才生效。
         int rows = orderMapper.update(null,
                 new LambdaUpdateWrapper<RegistrationOrder>()
                         .set(RegistrationOrder::getStatus, STATUS_CANCELLED)
                         .set(RegistrationOrder::getCancelledAt, LocalDateTime.now())
                         .set(RegistrationOrder::getCancelReason, cancelSource)
                         .eq(RegistrationOrder::getId, orderId)
-                        .eq(RegistrationOrder::getStatus, STATUS_PENDING_PAYMENT)
+                        .in(RegistrationOrder::getStatus, STATUS_PENDING_PAYMENT, STATUS_PAID)
         );
 
         RegistrationOrder current = orderMapper.selectById(orderId);

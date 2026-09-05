@@ -16,7 +16,7 @@ export class AppIcon {
   static readonly forward: string = 'sys.symbol.chevron_right'
   static readonly lightbulb: string = 'sys.symbol.lightbulb'
   static readonly send: string = 'sys.symbol.paperplane'
-  static readonly success: string = 'sys.symbol.checkmark_circle'
+  static readonly success: string = 'sys.symbol.checkmark_circle_fill'
   static readonly delete: string = 'sys.symbol.trash'
   static readonly edit: string = 'sys.symbol.pencil'
   static readonly message: string = 'sys.symbol.message'

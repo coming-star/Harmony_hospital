@@ -12,7 +12,7 @@ import { AppBar } from '../../components/AppBar'
 import * as slotApi from '../../api/slot'
 import { FeeTag } from '../../components/FeeTag'
 import { AvatarIcon } from '../../components/AvatarIcon'
-import { promptAction } from '@kit.ArkUI'
+import { showToast } from '../../utils/toast'
 
 interface DoctorDayView { date: string; mmdd: string; weekday: string; isToday: boolean }
 
@@ -66,7 +66,7 @@ struct DoctorList {
     return Array.from(m.values())
   }
   private pickSlot(s: SlotSummary): void {
-    if (s.remainingQuota <= 0) { promptAction.showToast({ message:'该时段已约满' }); return }
+    if (s.remainingQuota <= 0) { showToast('该时段已约满'); return }
     router.pushUrl({ url: Route.CONTACT_SELECT, params: {
       slotId: s.slotId,
       doctorName: s.doctorName,

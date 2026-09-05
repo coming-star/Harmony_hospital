@@ -44,6 +44,7 @@ public class ContactController {
 
     /**
      * 新增就诊人：为当前账号绑定一个就诊人。
+     * 返回 { contactId: "字符串" } —— 雪花大整数 ID 必须以字符串返回，否则前端 JS 解析丢精度。
      */
     @Operation(
             summary = "新增就诊人",
@@ -51,12 +52,17 @@ public class ContactController {
             security = {@SecurityRequirement(name = HttpHeaders.AUTHORIZATION)}
     )
     @PostMapping
-    public ApiResponse<Long> create(
+    public ApiResponse<ContactCreatedResponse> create(
             Authentication authentication,
             @Valid @RequestBody ContactRequest request
     ) {
         Long userId = currentUserId(authentication);
-        return ApiResponse.success(contactService.create(userId, request));
+        return ApiResponse.success(new ContactCreatedResponse(
+                String.valueOf(contactService.create(userId, request))));
+    }
+
+    /** 新增就诊人响应：contactId 用字符串避免前端精度丢失 */
+    public record ContactCreatedResponse(String contactId) {
     }
 
     /**

@@ -26,6 +26,7 @@
 
     { "name": "bg_page",                "value": "#FAFBFC" },
     { "name": "bg_card",                "value": "#FFFFFF" },
+    { "name": "sheet_bg",               "value": "#F1F3F5" },
     { "name": "input_bg",               "value": "#F5F7FA" },
     { "name": "divider",                "value": "#EAECF0" },
     { "name": "border",                 "value": "#E5E7EB" },

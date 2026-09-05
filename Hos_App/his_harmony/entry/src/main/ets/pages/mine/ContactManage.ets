@@ -11,7 +11,7 @@ import { EmptyState } from '../../components/EmptyState'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { AppBar } from '../../components/AppBar'
 import { PrimaryButton } from '../../components/PrimaryButton'
-import { promptAction } from '@kit.ArkUI'
+import { showToast } from '../../utils/toast'
 
 @Entry
 @Component
@@ -19,7 +19,8 @@ struct ContactManage {
   @State list: PatientContact[] = []
   @State loading: boolean = true
   @State addSheet: boolean = false
-  @State editId: number = 0
+  /** 正在编辑的就诊人 ID（字符串，防精度丢失；空串=新增模式） */
+  @State editId: string = ''
   @State fName: string = ''
   @State fPhone: string = ''
   @State fRelation: Relation = RelationValue.SELF
@@ -36,7 +37,7 @@ struct ContactManage {
   }
 
   openAdd(): void {
-    this.editId = 0
+    this.editId = ''
     this.fName = ''; this.fPhone = ''; this.fRelation = RelationValue.SELF
     this.addSheet = true
   }
@@ -46,8 +47,8 @@ struct ContactManage {
     this.addSheet = true
   }
   async submitForm(): Promise<void> {
-    if (!this.fName.trim()) { promptAction.showToast({message:'请输入姓名'}); return }
-    if (!/^1\d{10}$/.test(this.fPhone)) { promptAction.showToast({message:'手机号格式错误'}); return }
+    if (!this.fName.trim()) { showToast('请输入姓名'); return }
+    if (!/^1\d{10}$/.test(this.fPhone)) { showToast('手机号格式错误'); return }
     const body: ContactRequest = { name: this.fName.trim(), phone: this.fPhone, relation: this.fRelation }
     try {
       if (this.editId) await contactApi.updateContact(this.editId, body)
@@ -85,7 +86,7 @@ struct ContactManage {
         AppBar({ title:'就诊人' })
         Stack({ alignContent: Alignment.TopStart }) {
           if (this.loading) {
-            Column() { Text('加载中…').fontColor($r('app.color.text_hint')) }
+            Column() { Text('加载中…').fontSize(20).fontColor($r('app.color.text_hint')) }
               .width('100%').height('100%').justifyContent(FlexAlign.Center)
           } else if (this.list.length === 0) {
             Column() {
@@ -130,10 +131,22 @@ struct ContactManage {
         .borderRadius(30)
         .shadow({radius:8,color:'#440FA99E'})
         .onClick(() => this.openAdd())
+      // 删除确认：全屏遮罩 + ConfirmDialog（纯条件渲染）。
+      // 不再用第二个 bindSheet —— 同页挂多个 bindSheet 会相互覆盖导致弹窗失效；
+      // 且遮罩底色统一，顺带解决之前弹窗中间白色/两侧灰色不一致的问题。
+      if (this.deleteShow) {
+        Column() {
+          this.deleteDialog()
+        }
+        .width('100%').height('100%')
+        .backgroundColor('#66000000')
+        .justifyContent(FlexAlign.Center)
+        .onClick(() => { this.deleteShow = false })
+      }
     }
     .width('100%').height('100%')
+    // 页面根节点只挂这一个 bindSheet —— 与 ContactSelect 页「新增就诊人」弹窗完全相同的写法
     .bindSheet($$this.addSheet, this.FormSheet(), { height: 560, showClose: true, dragBar: true })
-    .bindSheet($$this.deleteShow, this.deleteDialog(), { height: 280, preferType: SheetType.CENTER, showClose: false, dragBar: true })
   }
 
   @Builder FormSheet() {
@@ -145,12 +158,10 @@ struct ContactManage {
       TextInput({ placeholder: '手机号', text: this.fPhone }).type(InputType.PhoneNumber)
         .width('86%').height(56).backgroundColor($r('app.color.bg_page'))
         .borderRadius(12).margin({bottom:12}).onChange(v => this.fPhone = v)
-      Text('关系').fontSize(17).fontColor($r('app.color.text_hint'))
-        .width('86%').margin({bottom:6}).alignSelf(ItemAlign.Start)
       Flex({wrap: FlexWrap.Wrap}) {
         ForEach(RelationList, (r: RelationOption) => {
           Text(r.label)
-            .fontSize(17)
+            .fontSize(19)
             .padding({left:14,right:14,top:6,bottom:6}).margin(6)
             .borderRadius(999)
             .backgroundColor(this.fRelation===r.key ? $r('app.color.primary_light') : $r('app.color.bg_page'))
@@ -161,6 +172,6 @@ struct ContactManage {
       }.width('86%')
       PrimaryButton({ label:'保存', variant:'primary', onTap: () => this.submitForm() })
         .width('86%').margin({top:24,bottom:24})
-    }.width('100%').alignItems(HorizontalAlign.Center).backgroundColor(Color.White)
+    }.width('100%').alignItems(HorizontalAlign.Center).backgroundColor($r('app.color.sheet_bg'))
   }
 }

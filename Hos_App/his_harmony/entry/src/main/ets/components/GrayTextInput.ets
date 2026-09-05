@@ -48,6 +48,8 @@ export struct GrayTextInput {
           .fontSize(30)
           .onChange((v) => { this.value = v })
           .onSubmit(() => { if (this.onSubmit) this.onSubmit() })
+          // 空回调消费点击事件，防止冒泡到页面的「点击空白收起键盘」onClick
+          .onClick(() => {})
       }
       .width('100%')
       .padding({ left: 12, right: 8 })
