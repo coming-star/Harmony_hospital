@@ -63,6 +63,20 @@ public class ScheduleSlotService {
                 .toList();
     }
 
+    /**
+     * 按 slotId 查询单个号源详情（订单确认页展示用）。
+     * 不限定状态/余量：页面展示不受影响，余量校验由下单接口兜底。
+     */
+    public SlotSummary detail(Long slotId) {
+        ScheduleSlot slot = scheduleSlotMapper.selectById(slotId);
+        if (slot == null) {
+            return null;
+        }
+        Doctor doctor = doctorMapper.selectById(slot.getDoctorId());
+        RegistrationLevel level = registrationLevelMapper.selectById(slot.getLevelId());
+        return toSummary(slot, doctor, level);
+    }
+
     private SlotSummary toSummary(ScheduleSlot slot, Doctor doctor, RegistrationLevel level) {
         return new SlotSummary(
                 slot.getId(),

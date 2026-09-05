@@ -25,7 +25,7 @@ struct Login {
 
   private validate(): boolean {
     if (!/^1[3-9]\d{9}$/.test(this.phone)) { promptAction.showToast({ message:'请输入正确的手机号' }); return false }
-    if (this.password.length < 6) { promptAction.showToast({ message:'密码至少 6 位' }); return false }
+    if (this.password.length < 8) { promptAction.showToast({ message:'密码至少 8 位' }); return false }
     if (!this.agreed) { promptAction.showToast({ message:'请先阅读并同意《用户协议》与《隐私政策》' }); return false }
     return true
   }

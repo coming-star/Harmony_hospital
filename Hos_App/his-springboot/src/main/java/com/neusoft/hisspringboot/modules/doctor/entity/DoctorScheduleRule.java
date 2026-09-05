@@ -9,7 +9,7 @@ import lombok.Data;
 @TableName("doctor_schedule_rule")
 public class DoctorScheduleRule {
 
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
     private Long doctorId;

@@ -7,6 +7,7 @@ import router from '@ohos.router'
 import type { OrderDetail, SlotSummary, PatientContact, CreateOrderRequest } from '../../types'
 import * as contactApi from '../../api/contact'
 import * as orderApi from '../../api/order'
+import * as slotApi from '../../api/slot'
 import { FeeTag } from '../../components/FeeTag'
 import { AvatarIcon } from '../../components/AvatarIcon'
 import { AppBar } from '../../components/AppBar'
@@ -28,13 +29,15 @@ struct OrderConfirm {
     const p: Record<string, Object> | undefined = router.getParams() as Record<string, Object> | undefined
     if (!p) return
     this.slotId = Number(p['slotId']); this.contactId = Number(p['contactId'])
-    // 信息展示：走 slot 接口 + contact 列表（slot 没有按 slotId 查询，这里偷懒用 departmentId+date 拉匹配）
-    // TODO 成员 C：后端加 GET /api/slots/{slotId} 最干净；没加就用 listSlots 取到当日再 find
+    // 信息展示：slot 详情走 GET /api/slots/{slotId}，就诊人走列表过滤
+    try {
+      this.slot = await slotApi.getSlot(this.slotId)
+    } catch (e) { /* 错误 toast 已由 request 层弹出，页面停留在占位文案 */ }
     const contacts: PatientContact[] = await contactApi.listContacts()
     this.contact = contacts.find((c: PatientContact) => c.id === this.contactId)
   }
 
-  private async pay(): Promise<void> {
+  private async submit(): Promise<void> {
     if (this.paying) return
     this.paying = true
     try {
@@ -44,9 +47,8 @@ struct OrderConfirm {
         idempotencyKey: Format.uuid()
       }
       const created: OrderDetail = await orderApi.createOrder(req)
-      const paid: OrderDetail = await orderApi.payOrder(created.id)
-      // 到预约成功页
-      router.replaceUrl({ url: Route.BOOK_SUCCESS, params: { orderId: String(paid.id) } })
+      // 只创建订单（待支付），支付在成功页或挂号记录里完成
+      router.replaceUrl({ url: Route.BOOK_SUCCESS, params: { orderId: String(created.id) } })
     } catch (e) { /* toast 已弹 */ }
     finally { this.paying = false }
   }
@@ -92,7 +94,7 @@ struct OrderConfirm {
           Text('支付金额').fontSize(12).fontColor($r('app.color.text_hint'))
           if (this.slot) { FeeTag({ fen: this.slot.feeFen, type:'danger', iconSize:'lg' }).margin({top:4}) }
         }.alignItems(HorizontalAlign.Start).layoutWeight(1)
-        PrimaryButton({ label:'立即支付', isEnabled:!this.paying, onTap:() => this.pay() }).width(180)
+        PrimaryButton({ label:'确认预约', isEnabled:!this.paying, onTap:() => this.submit() }).width(180)
       }
       .width('100%').padding(16)
       .backgroundColor($r('app.color.bg_card'))

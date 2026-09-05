@@ -114,7 +114,9 @@ async function doRequest<T>(
     }
   }
 
-  showLoading(!!opts.loading)
+  // 说明：opts.loading 仅保留为占位参数；请求层不再弹全局 loading
+  // （promptAction.showDialog 是模态弹窗且无法被代码关闭，之前会把整个 App 卡死）。
+  // 页面内的按钮态（如 PrimaryButton isEnabled）已足够表达加载中。
 
   let resp: http.HttpResponse
   try {
