@@ -26,6 +26,9 @@ public record LoginResponse(
         @Schema(description = "用户昵称", example = "张晓晨")
         String nickname,
 
+        @Schema(description = "用户手机号", example = "13800000002")
+        String phone,
+
         @Schema(description = "用户类型：PATIENT 患者 / ADMIN 管理员", example = "PATIENT",
                 allowableValues = {"PATIENT", "ADMIN"})
         String userType

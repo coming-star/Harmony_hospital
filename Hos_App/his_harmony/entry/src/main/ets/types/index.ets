@@ -148,6 +148,7 @@ export interface LoginResponse {
   tokenType: 'Bearer'
   userId: number
   nickname: string
+  phone: string
   userType: UserType
 }
 
