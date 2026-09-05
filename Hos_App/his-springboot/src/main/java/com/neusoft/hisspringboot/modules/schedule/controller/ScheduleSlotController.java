@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -46,5 +47,21 @@ public class ScheduleSlotController {
             @RequestParam(required = false) Long levelId
     ) {
         return ApiResponse.success(scheduleSlotService.query(departmentId, date, levelId));
+    }
+
+    /**
+     * 号源详情：订单确认页按 slotId 展示医生/时段/费用信息。
+     */
+    @Operation(
+            summary = "号源详情",
+            description = "按号源ID查询单个时段详情（含医生姓名、级别、费用），供订单确认页展示",
+            security = {@SecurityRequirement(name = HttpHeaders.AUTHORIZATION)}
+    )
+    @GetMapping("/api/slots/{slotId}")
+    public ApiResponse<SlotSummary> detail(
+            @Parameter(description = "号源ID", required = true, example = "601031")
+            @PathVariable Long slotId
+    ) {
+        return ApiResponse.success(scheduleSlotService.detail(slotId));
     }
 }

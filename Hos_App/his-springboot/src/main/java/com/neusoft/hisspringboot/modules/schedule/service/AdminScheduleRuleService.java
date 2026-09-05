@@ -31,6 +31,7 @@ public class AdminScheduleRuleService {
     private final ScheduleRuleMapper scheduleRuleMapper;
     private final ScheduleSlotMapper scheduleSlotMapper;
     private final RedisCacheUtil redisCacheUtil;
+    private final ScheduleSlotGeneratorService slotGeneratorService;
 
     public PageResult<ScheduleRule> list(String ruleName, int page, int size) {
         Page<ScheduleRule> mpPage = scheduleRuleMapper.selectPage(
@@ -49,6 +50,7 @@ public class AdminScheduleRuleService {
         rule.setEnabled(rule.getEnabled() == null ? 1 : rule.getEnabled());
         scheduleRuleMapper.insert(rule);
         evictSlotCache();
+        slotGeneratorService.generateNextDays();
         return rule.getId();
     }
 
@@ -57,6 +59,7 @@ public class AdminScheduleRuleService {
         rule.setId(id);
         scheduleRuleMapper.updateById(rule);
         evictSlotCache();
+        slotGeneratorService.generateNextDays();
     }
 
     public void toggleStatus(Long id, Integer enabled) {
@@ -64,6 +67,7 @@ public class AdminScheduleRuleService {
         rule.setEnabled(enabled);
         scheduleRuleMapper.updateById(rule);
         evictSlotCache();
+        slotGeneratorService.generateNextDays();
     }
 
     public void delete(Long id) {

@@ -17,3 +17,8 @@ export function listSlots(q: SlotQuery): Promise<SlotSummary[]> {
   }
   return get<SlotSummary[]>('/api/slots', query)
 }
+
+/** 号源详情：订单确认页按 slotId 查询单个时段（医生/时间/费用）。 */
+export function getSlot(slotId: number | string): Promise<SlotSummary> {
+  return get<SlotSummary>(`/api/slots/${slotId}`)
+}

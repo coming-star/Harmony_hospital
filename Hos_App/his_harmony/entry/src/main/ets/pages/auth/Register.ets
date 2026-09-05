@@ -25,7 +25,7 @@ struct Register {
 
   private valid(): boolean {
     if (!/^1[3-9]\d{9}$/.test(this.phone)) { promptAction.showToast({ message:'手机号格式不正确' }); return false }
-    if (this.password.length < 6) { promptAction.showToast({ message:'密码至少 6 位' }); return false }
+    if (this.password.length < 8) { promptAction.showToast({ message:'密码至少 8 位' }); return false }
     if (this.password !== this.confirm) { promptAction.showToast({ message:'两次密码不一致' }); return false }
     if (!this.agreed) { promptAction.showToast({ message:'请先同意《用户协议》与《隐私政策》' }); return false }
     return true
@@ -58,7 +58,7 @@ struct Register {
 
           Column({ space: 25 }) {
             GrayTextInput({ label:'手机号', placeholder:'请输入手机号', value: $phone, type: InputType.PhoneNumber })
-            GrayTextInput({ label:'密码', placeholder:'请设置密码（至少6位）', value: $password, type: InputType.Password, rightEye: true })
+            GrayTextInput({ label:'密码', placeholder:'请设置密码（至少8位）', value: $password, type: InputType.Password, rightEye: true })
             GrayTextInput({ label:'确认密码', placeholder:'请再次输入密码', value: $confirm, type: InputType.Password, rightEye: true })
           }.width('80%')
 
