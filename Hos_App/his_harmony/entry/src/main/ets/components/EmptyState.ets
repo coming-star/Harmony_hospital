@@ -32,7 +32,7 @@ export struct EmptyState {
         .margin({ bottom: $r('app.float.sp_8') })
 
       Text(this.hint)
-        .fontSize(18)
+        .fontSize(20)
         .fontColor($r('app.color.text_hint'))
         .margin({ bottom: $r('app.float.sp_16') })
 
@@ -41,7 +41,7 @@ export struct EmptyState {
           .height($r('app.float.btn_height_md'))
           .backgroundColor($r('app.color.primary'))
           .fontColor($r('app.color.text_white'))
-          .fontSize(16)
+          .fontSize(20)
           .padding({ left: $r('app.float.sp_20'), right: $r('app.float.sp_20') })
           .onClick(() => this.doAction())
       }

@@ -98,9 +98,9 @@ struct OrderRecord {
       Scroll() {
         Row() {
           ForEach(TABS, (t: TabItem) => {
-            Text(t.label).fontSize(14).fontWeight(this.tabKey===t.key ? 700 : 500)
+            Text(t.label).fontSize(20).fontWeight(this.tabKey===t.key ? 700 : 500)
               .fontColor(this.tabKey===t.key ? $r('app.color.primary') : $r('app.color.text_secondary'))
-              .padding({left:16,right:16,top:12,bottom:12})
+              .padding({left:16,right:16,top:14,bottom:14})
               .borderWidth({bottom: this.tabKey===t.key ? 3 : 0})
               .borderColor($r('app.color.primary'))
               .margin({right:4})
@@ -126,14 +126,14 @@ struct OrderRecord {
               // 头：科室 + StatusTag
               Row() {
                 Column() {
-                  Text(o.departmentName).fontSize(16).fontWeight(700).fontColor($r('app.color.text_primary'))
-                  Text(`${o.doctorName} · ${o.levelName}`).fontSize(12).fontColor($r('app.color.text_hint')).margin({top:4})
+                  Text(o.departmentName).fontSize(20).fontWeight(700).fontColor($r('app.color.text_primary'))
+                  Text(`${o.doctorName} · ${o.levelName}`).fontSize(16).fontColor($r('app.color.text_hint')).margin({top:4})
                 }.layoutWeight(1).alignItems(HorizontalAlign.Start)
                 StatusTag({ status: o.status })
               }.width('100%')
 
               Row() { Text(`${Format.date(o.visitDate)}  ${Format.time(o.startTime)}-${Format.time(o.endTime)}`)
-                  .fontSize(13).fontColor($r('app.color.text_secondary')) }.margin({top:8})
+                  .fontSize(17).fontColor($r('app.color.text_secondary')) }.margin({top:8})
 
               // 详情展开
               if (this.expandId === o.id) {
@@ -149,24 +149,24 @@ struct OrderRecord {
 
               Row() {
                 Text(this.expandId===o.id ? '收起详情' : '查看详情')
-                  .fontSize(13).fontColor($r('app.color.text_hint'))
+                  .fontSize(17).fontColor($r('app.color.text_hint'))
                   .padding(8).layoutWeight(1)
                   .onClick(() => { this.expandId = this.expandId===o.id ? 0 : o.id })
                 // 待支付 → 立即支付
                 if (o.status === OrderStatusValue.PENDING_PAYMENT) {
-                  Button('取消预约').height(36).backgroundColor($r('app.color.disabled_light'))
-                    .fontColor($r('app.color.text_secondary')).fontSize(13)
+                  Button('取消预约').height(40).backgroundColor($r('app.color.disabled_light'))
+                    .fontColor($r('app.color.text_secondary')).fontSize(17)
                     .borderRadius(999).margin({right:8})
                     .onClick(() => this.askCancel(o))
-                  Button('立即支付').height(36)
-                    .backgroundColor($r('app.color.warning')).fontColor(Color.White).fontSize(13)
+                  Button('立即支付').height(40)
+                    .backgroundColor($r('app.color.warning')).fontColor(Color.White).fontSize(17)
                     .borderRadius(999)
                     .onClick(() => this.pay(o))
                 }
                 // 已支付 → 取消预约
                 if (o.status === OrderStatusValue.PAID) {
-                  Button('取消预约').height(36).backgroundColor($r('app.color.danger_light'))
-                    .fontColor($r('app.color.danger')).fontSize(13).borderRadius(999)
+                  Button('取消预约').height(40).backgroundColor($r('app.color.danger_light'))
+                    .fontColor($r('app.color.danger')).fontSize(17).borderRadius(999)
                     .onClick(() => this.askCancel(o))
                 }
               }.margin({top:12})
@@ -179,7 +179,7 @@ struct OrderRecord {
 
         if (this.list.length > 0 && this.list.length < this.total) {
           ListItem() {
-            Text('加载更多').fontSize(13).fontColor($r('app.color.text_hint'))
+            Text('加载更多').fontSize(15).fontColor($r('app.color.text_hint'))
               .padding(16).onClick(() => { this.page += 1; this.reload() })
           }.width('100%').alignSelf(ItemAlign.Center)
         }
@@ -191,8 +191,8 @@ struct OrderRecord {
 
   @Builder R(k: string, v: string) {
     Row() {
-      Text(k).layoutWeight(1).fontSize(12).fontColor($r('app.color.text_hint'))
-      Text(v).fontSize(13).fontColor($r('app.color.text_primary'))
+      Text(k).layoutWeight(1).fontSize(16).fontColor($r('app.color.text_hint'))
+      Text(v).fontSize(17).fontColor($r('app.color.text_primary'))
     }.margin({top:6})
   }
 }

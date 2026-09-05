@@ -90,19 +90,19 @@ export struct AITab {
       // 底部输入栏（参考图同款：灰输入框 + 蓝圆角发送按钮）
       Row() {
         TextInput({ placeholder:'输入你的问题...', text: this.input })
-          .layoutWeight(1).height(44)
+          .layoutWeight(1).height(60)
           .backgroundColor($r('app.color.input_bg'))
           .borderRadius($r('app.float.radius_md'))
-          .padding({left:14,right:14})
-          .fontSize(19)
+          .padding({left:16,right:16})
+          .fontSize(30)
           .placeholderColor($r('app.color.text_hint'))
           .onChange(v => this.input = v)
           .onSubmit(() => this.send())
 
         Stack({alignContent:Alignment.Center}) {
-          Column().width(44).height(44).borderRadius(14).backgroundColor($r('app.color.primary'))
+          Column().width(52).height(52).borderRadius(14).backgroundColor($r('app.color.primary'))
           SymbolGlyph($r(AppIcon.send))
-            .fontSize(22)
+            .fontSize(24)
         }
         .margin({left:12})
         .onClick(() => this.send())

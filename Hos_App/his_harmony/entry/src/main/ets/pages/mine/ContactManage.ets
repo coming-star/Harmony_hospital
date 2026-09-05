@@ -80,85 +80,77 @@ struct ContactManage {
   }
 
   build() {
-    Column() {
-      AppBar({ title:'就诊人' })
-      Stack({ alignContent: Alignment.TopStart }) {
-      if (this.loading) {
-        Column() { Text('加载中…').fontColor($r('app.color.text_hint')) }
-          .width('100%').height('100%').justifyContent(FlexAlign.Center)
-      } else if (this.list.length === 0) {
-        Column() {
-          EmptyState({
-            hint: '还没有就诊人，点击下方按钮添加', icon: AppIcon.profileOutline,
-            actionText: '新增就诊人', onAction: () => this.openAdd()
-          })
-        }.width('100%').height('100%').padding({ top: 60 })
-      } else {
-        List() {
-          ForEach(this.list, (c: PatientContact) => {
-            ListItem() {
-              Row() {
-                AvatarIcon({ name: c.name, iconSize: 48 })
-                Column() {
-                  Row() {
-                    Text(c.name).fontSize(15).fontWeight(600).fontColor($r('app.color.text_primary')).margin({right:8})
-                    Text(relationText(c.relation))
-                      .fontSize(11).padding({left:8,right:8,top:2,bottom:2})
-                      .backgroundColor($r('app.color.primary_light'))
-                      .fontColor($r('app.color.primary')).borderRadius(999)
-                  }
-                  Text(c.phone).fontSize(12).fontColor($r('app.color.text_hint')).margin({top:4})
-                }.alignItems(HorizontalAlign.Start).layoutWeight(1).margin({left:12})
-                // 编辑 / 删除
-                SymbolGlyph($r(AppIcon.edit))
-                  .fontSize(18)
-                  .padding(12)
-                  .onClick(() => this.openEdit(c))
-                SymbolGlyph($r(AppIcon.delete))
-                  .fontSize(18)
-                  .padding(12)
-                  .onClick(() => this.askDelete(c))
-              }.width('92%').padding(16).alignSelf(ItemAlign.Center)
-               .backgroundColor($r('app.color.bg_card')).borderRadius(16)
-               .margin({ top: 12 })
-            }.width('100%')
-          }, (c: PatientContact) => String(c.id))
-        }.width('100%').padding({top:4,bottom:96})
-      }
-
-      // FAB
+    Stack() {
       Column() {
-        Text('+').fontSize(36).fontColor(Color.White)
-          .width(56).height(56).textAlign(TextAlign.Center)
-      }
-      .position({x: '82%', y: '82%'})
-      .width(56).height(56)
-      .backgroundColor($r('app.color.primary'))
-      .borderRadius(28)
-      .shadow({radius:8,color:'#440FA99E'})
-      .onClick(() => this.openAdd())
+        AppBar({ title:'就诊人' })
+        Stack({ alignContent: Alignment.TopStart }) {
+          if (this.loading) {
+            Column() { Text('加载中…').fontColor($r('app.color.text_hint')) }
+              .width('100%').height('100%').justifyContent(FlexAlign.Center)
+          } else if (this.list.length === 0) {
+            Column() {
+              EmptyState({
+                hint: '还没有就诊人，点击下方按钮添加', icon: AppIcon.profileOutline,
+                actionText: '新增就诊人', onAction: () => this.openAdd()
+              })
+            }.width('100%').height('100%').padding({ top: 60 })
+          } else {
+            List() {
+              ForEach(this.list, (c: PatientContact) => {
+                ListItem() {
+                  Row() {
+                    AvatarIcon({ name: c.name, iconSize: 56 })
+                    Column() {
+                      Row() {
+                        Text(c.name).fontSize(27).fontWeight(600).fontColor($r('app.color.text_primary')).margin({right:12})
+                        Text(relationText(c.relation))
+                          .fontSize(23).padding({left:12,right:12,top:6,bottom:6})
+                          .backgroundColor($r('app.color.primary_light'))
+                          .fontColor($r('app.color.primary')).borderRadius(999)
+                      }
+                      Text(c.phone).fontSize(24).fontColor($r('app.color.text_hint')).margin({top:8})
+                    }.alignItems(HorizontalAlign.Start).layoutWeight(1).margin({left:16})
+                    SymbolGlyph($r(AppIcon.edit)).fontSize(30).padding(12)
+                      .onClick(() => this.openEdit(c))
+                    SymbolGlyph($r(AppIcon.delete)).fontSize(30).padding(12)
+                      .onClick(() => this.askDelete(c))
+                  }.width('92%').padding(20).alignSelf(ItemAlign.Center)
+                   .backgroundColor($r('app.color.bg_card')).borderRadius(16).margin({ top: 12 })
+                }.width('100%')
+              }, (c: PatientContact) => String(c.id))
+            }.width('100%').padding({top:4,bottom:96})
+          }
+        }.width('100%').layoutWeight(1)
+      }.width('100%').height('100%').backgroundColor($r('app.color.bg_page'))
+
+      Text('+').fontSize(40).fontWeight(700).fontColor(Color.White)
+        .position({ x: '84%', y: '82%' })
+        .width(60).height(60).textAlign(TextAlign.Center)
+        .backgroundColor($r('app.color.primary'))
+        .borderRadius(30)
+        .shadow({radius:8,color:'#440FA99E'})
+        .onClick(() => this.openAdd())
     }
-      .width('100%').layoutWeight(1).backgroundColor($r('app.color.bg_page'))
-      .bindSheet($$this.addSheet, this.FormSheet(), { height: 560, showClose: true, dragBar: true })
-      .bindSheet($$this.deleteShow, this.deleteDialog(), { height: 280, preferType: SheetType.CENTER, showClose: false, dragBar: true })
-    }
+    .width('100%').height('100%')
+    .bindSheet($$this.addSheet, this.FormSheet(), { height: 560, showClose: true, dragBar: true })
+    .bindSheet($$this.deleteShow, this.deleteDialog(), { height: 280, preferType: SheetType.CENTER, showClose: false, dragBar: true })
   }
 
   @Builder FormSheet() {
     Column() {
-      Text(this.editId ? '编辑就诊人' : '新增就诊人').fontSize(18).fontWeight(700).margin({top:16,bottom:12})
-      TextInput({ placeholder: '姓名', text: this.fName }).width('86%').height(46)
+      Text(this.editId ? '编辑就诊人' : '新增就诊人').fontSize(22).fontWeight(700).margin({top:16,bottom:12})
+      TextInput({ placeholder: '姓名', text: this.fName }).width('86%').height(56)
         .backgroundColor($r('app.color.bg_page')).borderRadius(12).margin({bottom:12})
         .onChange(v => this.fName = v)
       TextInput({ placeholder: '手机号', text: this.fPhone }).type(InputType.PhoneNumber)
-        .width('86%').height(46).backgroundColor($r('app.color.bg_page'))
+        .width('86%').height(56).backgroundColor($r('app.color.bg_page'))
         .borderRadius(12).margin({bottom:12}).onChange(v => this.fPhone = v)
-      Text('关系').fontSize(13).fontColor($r('app.color.text_hint'))
+      Text('关系').fontSize(17).fontColor($r('app.color.text_hint'))
         .width('86%').margin({bottom:6}).alignSelf(ItemAlign.Start)
       Flex({wrap: FlexWrap.Wrap}) {
         ForEach(RelationList, (r: RelationOption) => {
           Text(r.label)
-            .fontSize(13)
+            .fontSize(17)
             .padding({left:14,right:14,top:6,bottom:6}).margin(6)
             .borderRadius(999)
             .backgroundColor(this.fRelation===r.key ? $r('app.color.primary_light') : $r('app.color.bg_page'))

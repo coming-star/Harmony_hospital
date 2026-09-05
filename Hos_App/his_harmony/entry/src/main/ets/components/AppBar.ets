@@ -41,7 +41,7 @@ export struct AppBar {
 
       if (this.rightIcon && this.rightIcon.length > 0) {
         SymbolGlyph($r(this.rightIcon))
-          .fontSize(22)
+          .fontSize(26)
           .width(40).height(40)
           .onClick(() => { if (this.onRightClick) this.onRightClick() })
       } else if (!this.hideBack) {

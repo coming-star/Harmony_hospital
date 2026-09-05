@@ -11,7 +11,8 @@ import { Route } from './theme'
 /** 后端地址：
  *  预览器用 127.0.0.1:8081；真机改成电脑局域网 IP:8081（如 http://192.168.1.100:8081）；
  *  Android 模拟器用 10.0.2.2:8081。后端端口见 application.yml 的 server.port。 */
-export const BASE_URL = 'http://127.0.0.1:8081'
+// export const BASE_URL = 'http://127.0.0.1:8081'
+export const BASE_URL = 'http://10.0.2.2:8081'
 
 /** 业务错误码 → 中文文案（与后端 ErrorCode 枚举一一对应）*/
 function bizMsg(code: number): string {
@@ -47,7 +48,7 @@ function toast(msg: string, duration: number = 1500): void {
 function showLoading(on: boolean): void {
   if (!on) return
   try {
-    promptAction.showDialog({ message: '加载中…' })
+    promptAction.showToast({ message: '加载中…' })
   } catch (e) {
   }
 }
@@ -114,9 +115,7 @@ async function doRequest<T>(
     }
   }
 
-  // 说明：opts.loading 仅保留为占位参数；请求层不再弹全局 loading
-  // （promptAction.showDialog 是模态弹窗且无法被代码关闭，之前会把整个 App 卡死）。
-  // 页面内的按钮态（如 PrimaryButton isEnabled）已足够表达加载中。
+  showLoading(!!opts.loading)
 
   let resp: http.HttpResponse
   try {

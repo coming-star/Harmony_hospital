@@ -18,6 +18,12 @@ import { promptAction } from '@kit.ArkUI'
 @Component
 struct ContactSelect {
   @State slotId: number = 0
+  @State doctorName: string = ''
+  @State levelName: string = ''
+  @State feeFen: number = 0
+  @State visitDate: string = ''
+  @State startTime: string = ''
+  @State endTime: string = ''
   @State list: PatientContact[] = []
   @State selectedId: number = 0
   @State addSheet: boolean = false
@@ -27,7 +33,15 @@ struct ContactSelect {
 
   async aboutToAppear(): Promise<void> {
     const p: Record<string, Object> | undefined = router.getParams() as Record<string, Object> | undefined
-    if (p && p['slotId']) this.slotId = Number(p['slotId'])
+    if (p) {
+      if (p['slotId']) this.slotId = Number(p['slotId'])
+      this.doctorName = String(p['doctorName'] ?? '')
+      this.levelName = String(p['levelName'] ?? '')
+      this.feeFen = Number(p['feeFen'] ?? 0)
+      this.visitDate = String(p['visitDate'] ?? '')
+      this.startTime = String(p['startTime'] ?? '')
+      this.endTime = String(p['endTime'] ?? '')
+    }
     await this.load()
   }
   private async load(): Promise<void> {
@@ -35,7 +49,16 @@ struct ContactSelect {
   }
   private goConfirm(): void {
     if (!this.selectedId) { promptAction.showToast({ message: '请选择就诊人' }); return }
-    router.pushUrl({ url: Route.ORDER_CONFIRM, params: { slotId: this.slotId, contactId: this.selectedId } })
+    router.pushUrl({ url: Route.ORDER_CONFIRM, params: {
+      slotId: this.slotId,
+      doctorName: this.doctorName,
+      levelName: this.levelName,
+      feeFen: this.feeFen,
+      visitDate: this.visitDate,
+      startTime: this.startTime,
+      endTime: this.endTime,
+      contactId: this.selectedId
+    } })
   }
   private async submitAdd(): Promise<void> {
     if (!this.addName.trim()) { promptAction.showToast({ message:'请输入姓名' }); return }
@@ -52,17 +75,17 @@ struct ContactSelect {
 
   @Builder AddContactSheet() {
     Column() {
-      Text('新增就诊人').fontSize(18).fontWeight(700).margin({top:16,bottom:12})
-      TextInput({ placeholder: '姓名' }).width('86%').height(44).margin({bottom:12})
+      Text('新增就诊人').fontSize(22).fontWeight(700).margin({top:16,bottom:12})
+      TextInput({ placeholder: '姓名' }).width('86%').height(56).fontSize(30).margin({bottom:12})
         .onChange(v => this.addName = v)
-      TextInput({ placeholder: '手机号' }).width('86%').height(44).margin({bottom:12})
+      TextInput({ placeholder: '手机号' }).width('86%').height(56).fontSize(30).margin({bottom:12})
         .type(InputType.PhoneNumber).onChange(v => this.addPhone = v)
       // 关系单选（简化 5 个 Chip）
       Flex({ wrap: FlexWrap.Wrap }) {
         ForEach(RelationList, (r: RelationOption) => {
           Text(r.label)
-            .fontSize(13)
-            .padding({left:14,right:14,top:6,bottom:6})
+            .fontSize(20)
+            .padding({left:18,right:18,top:10,bottom:10})
             .margin(6)
             .borderRadius(999)
             .backgroundColor(this.addRelation === r.key ? $r('app.color.primary_light') : $r('app.color.bg_page'))
@@ -72,7 +95,7 @@ struct ContactSelect {
         })
       }.width('86%')
 
-      Button('保存').width('86%').height(48).margin({top:20,bottom:24})
+      Button('保存').width('86%').height(54).fontSize(25).margin({top:20,bottom:24})
         .backgroundColor($r('app.color.primary'))
         .onClick(() => this.submitAdd())
     }.width('100%').alignItems(HorizontalAlign.Center)
@@ -88,20 +111,20 @@ struct ContactSelect {
               Radio({ value: 'c_'+c.id, group: 'contacts' })
                 .checked(this.selectedId === c.id)
                 .onChange(() => { this.selectedId = c.id })
-              AvatarIcon({ name: c.name, iconSize: 44 }).margin({ left: 8 })
+              AvatarIcon({ name: c.name, iconSize: 52 }).margin({ left: 12 })
               Column() {
                 Row() {
-                  Text(c.name).fontSize(15).fontWeight(600).margin({right:8})
-                  Text(relationText(c.relation)).fontSize(11)
-                    .padding({left:8,right:8,top:2,bottom:2})
+                  Text(c.name).fontSize(27).fontWeight(600).margin({right:12})
+                  Text(relationText(c.relation)).fontSize(23)
+                    .padding({left:12,right:12,top:6,bottom:6})
                     .backgroundColor($r('app.color.primary_light'))
                     .fontColor($r('app.color.primary'))
                     .borderRadius(999)
                 }
-                Text(c.phone).fontSize(12).fontColor($r('app.color.text_hint')).margin({top:4})
-              }.margin({ left: 12 }).layoutWeight(1).alignItems(HorizontalAlign.Start)
+                Text(c.phone).fontSize(24).fontColor($r('app.color.text_hint')).margin({top:8})
+              }.margin({ left: 18 }).layoutWeight(1).alignItems(HorizontalAlign.Start)
             }
-            .width('100%').padding(16)
+            .width('100%').padding(20)
             .onClick(() => { this.selectedId = c.id })
           }
           .borderWidth({bottom:0.5}).borderColor($r('app.color.divider'))

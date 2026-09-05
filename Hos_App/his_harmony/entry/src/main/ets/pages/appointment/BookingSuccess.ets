@@ -17,7 +17,6 @@ import { PrimaryButton } from '../../components/PrimaryButton'
 @Component
 struct BookingSuccess {
   @State order: OrderDetail | undefined = undefined
-  @State paying: boolean = false
 
   async aboutToAppear(): Promise<void> {
     const p: Record<string, Object> | undefined = router.getParams() as Record<string, Object> | undefined
@@ -26,23 +25,8 @@ struct BookingSuccess {
     }
   }
 
-  private get pending(): boolean {
-    return this.order !== undefined && this.order!.status === 'PENDING_PAYMENT'
-  }
-
   private goRecord(): void { router.replaceUrl({ url: Route.ORDER_RECORD }) }
   private goHome(): void   { router.replaceUrl({ url: Route.HOME }) }
-
-  /** 待支付订单就地支付，支付后刷新状态展示 */
-  private async pay(): Promise<void> {
-    if (this.paying || !this.order) return
-    this.paying = true
-    try {
-      await orderApi.payOrder(this.order.id)
-      this.order = await orderApi.getOrder(String(this.order.id))
-    } catch (_) { /* toast 已弹 */ }
-    finally { this.paying = false }
-  }
 
   build() {
     Column() {
@@ -55,7 +39,7 @@ struct BookingSuccess {
           .borderColor($r('app.color.success_light'))
           .borderRadius(999)
           .margin({bottom:16})
-        Text(this.pending ? '预约成功，请尽快支付' : '预约成功！').fontSize(28).fontWeight(800)
+        Text('预约成功！').fontSize(28).fontWeight(800)
           .fontColor($r('app.color.text_primary')).margin({bottom:8})
         if (this.order) {
           Text(`订单号：${this.order.orderNo}`).fontSize(13)
@@ -85,13 +69,8 @@ struct BookingSuccess {
       Row() {
         PrimaryButton({ label:'查看挂号记录', variant:'light', onTap:() => this.goRecord() })
           .width('45%').margin({right:12})
-        if (this.pending) {
-          PrimaryButton({ label:'立即支付', isEnabled:!this.paying, onTap:() => this.pay() })
-            .width('45%')
-        } else {
-          PrimaryButton({ label:'返回首页', variant:'primary', onTap:() => this.goHome() })
-            .width('45%')
-        }
+        PrimaryButton({ label:'返回首页', variant:'primary', onTap:() => this.goHome() })
+          .width('45%')
       }.padding(16)
     }
     .width('100%').height('100%')

@@ -26,12 +26,12 @@ export struct FeeTag {
       default:          return $r('app.color.primary')
     }
   }
-  private pickFont(): ResourceStr {
+  private pickFont(): number {
     switch (this.iconSize) {
-      case 'lg': return $r('app.float.fs_20')
-      case 'sm': return $r('app.float.fs_14')
+      case 'lg': return 24
+      case 'sm': return 18
       case 'md':
-      default:   return $r('app.float.fs_16')
+      default:   return 20
     }
   }
 

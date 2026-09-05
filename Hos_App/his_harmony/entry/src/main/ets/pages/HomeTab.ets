@@ -49,13 +49,7 @@ export struct HomeTab {
           Text('东软云医院').fontSize(32).fontWeight(800).fontColor($r('app.color.text_white'))
           Text('预约挂号 · 健康管理').fontSize(20).fontColor('#CCFFFFFF').margin({ top: 6 })
         }.layoutWeight(1).alignItems(HorizontalAlign.Start)
-
-        // 右上角 stethoscope 圆 icon（参考图）
-        Stack({alignContent:Alignment.Center}) {
-          Circle().width(40).height(40).fill('rgba(255,255,255,0.20)')
-          StethoscopeIcon({ customSize: 20, color: $r('app.color.text_white') })
-        }
-      }.width('100%').padding({ top: 12, left: 20, right: 20, bottom: 16 })
+      }.width('100%').padding({ top: 4, left: 20, right: 20, bottom: 16 })
 
       // 白色大圆角搜索框
       Row() {
@@ -73,7 +67,7 @@ export struct HomeTab {
     }
     .width('100%')
     .backgroundColor($r('app.color.primary'))
-    .borderRadius({ bottomLeft: 28, bottomRight: 28 })
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP])
   }
 
   @Builder Banner() {
@@ -81,7 +75,7 @@ export struct HomeTab {
       ForEach([1,2,3], (i: number) => {
         Stack() {
           // 参考图首页 Banner：医院建筑外景（占位图 placehold.co，可替换成真实图）
-          Image(`https://placehold.co/900x400/0A66C2/FFFFFF/png?text=Banner${i}`)
+          Image($r(`app.media.banner${i}`))
             .width('100%').height(180).borderRadius(20)
             .objectFit(ImageFit.Cover)
         }
@@ -135,23 +129,23 @@ export struct HomeTab {
             Column() {
               Row() {
                 Stack() {
-                  Circle().width(48).height(48).fill($r('app.color.primary_light'))
-                  StethoscopeIcon({ customSize: 22, color: $r('app.color.primary') })
-                }.margin({ right: 10 })
+                  Circle().width(56).height(56).fill($r('app.color.primary_light'))
+                  StethoscopeIcon({ customSize: 44, color: $r('app.color.primary') })
+                }.margin({ right: 12 })
                 Column() {
-                  Text(d.name).fontSize(19).fontWeight(700).fontColor($r('app.color.text_primary'))
+                  Text(d.name).fontSize(22).fontWeight(700).fontColor($r('app.color.text_primary'))
                   if (d.description) {
-                    Text(d.description).fontSize(15).fontColor($r('app.color.text_secondary'))
-                      .margin({top:4}).maxLines(2).textOverflow({overflow:TextOverflow.Ellipsis})
+                    Text(d.description).fontSize(17).fontColor($r('app.color.text_secondary'))
+                      .margin({top:6}).maxLines(3).textOverflow({overflow:TextOverflow.Ellipsis})
                   }
                 }.layoutWeight(1).alignItems(HorizontalAlign.Start)
                 SymbolGlyph($r(AppIcon.forward))
                   .fontSize(24)
                   .margin({right:4})
               }
-              .width('100%').padding(16)
+              .width('100%').padding(18)
             }
-            .width('100%')
+            .width('100%').height(132)
             .backgroundColor($r('app.color.bg_card'))
             .borderRadius($r('app.float.radius_md'))
             .onClick(() => {
@@ -161,7 +155,7 @@ export struct HomeTab {
         }, (d: DepartmentTreeNode) => String(d.id))
       }
       .columnsTemplate('1fr 1fr').rowsGap(12).columnsGap(12)
-      .width('92%').padding({ left: 16, right: 16, top: 8, bottom: 16 })
+      .width('100%').padding({ left: 20, right: 20, top: 8, bottom: 16 })
       .backgroundColor(Color.Transparent)
     }
   }

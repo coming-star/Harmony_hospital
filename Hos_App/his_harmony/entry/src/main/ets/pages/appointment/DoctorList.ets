@@ -16,6 +16,14 @@ import { promptAction } from '@kit.ArkUI'
 
 interface DoctorDayView { date: string; mmdd: string; weekday: string; isToday: boolean }
 
+interface LevelTab { levelId: number; label: string }
+const LEVEL_TABS: LevelTab[] = [
+  { levelId: 0,    label: '全部' },
+  { levelId: 3001, label: '普通号' },
+  { levelId: 3002, label: '专家号' },
+  { levelId: 3003, label: '主任医师号' },
+]
+
 interface DoctorGroup {
   doctorId: number
   doctorName: string
@@ -31,6 +39,7 @@ struct DoctorList {
     return { date: d.iso, mmdd: d.mmdd, weekday: d.weekday, isToday: d.isToday }
   })
   @State slots: SlotSummary[] = []
+  @State selectedLevelId: number = 0
 
   async aboutToAppear(): Promise<void> {
     const params: Record<string, Object> | undefined = router.getParams() as Record<string, Object> | undefined
@@ -45,8 +54,11 @@ struct DoctorList {
     catch (_) {}
   }
   private doctors(): DoctorGroup[] {
+    const filtered = this.selectedLevelId === 0
+      ? this.slots
+      : this.slots.filter((s: SlotSummary) => s.levelId === this.selectedLevelId)
     const m: Map<number, DoctorGroup> = new Map<number, DoctorGroup>()
-    this.slots.forEach((s: SlotSummary) => {
+    filtered.forEach((s: SlotSummary) => {
       let g: DoctorGroup | undefined = m.get(s.doctorId)
       if (!g) { g = { doctorId: s.doctorId, doctorName: s.doctorName, items: [] }; m.set(s.doctorId, g) }
       g.items.push(s)
@@ -55,7 +67,15 @@ struct DoctorList {
   }
   private pickSlot(s: SlotSummary): void {
     if (s.remainingQuota <= 0) { promptAction.showToast({ message:'该时段已约满' }); return }
-    router.pushUrl({ url: Route.CONTACT_SELECT, params: { slotId: s.slotId } })
+    router.pushUrl({ url: Route.CONTACT_SELECT, params: {
+      slotId: s.slotId,
+      doctorName: s.doctorName,
+      levelName: s.levelName,
+      feeFen: s.feeFen,
+      visitDate: s.visitDate,
+      startTime: s.startTime,
+      endTime: s.endTime
+    } })
   }
 
   build() {
@@ -67,14 +87,14 @@ struct DoctorList {
           ForEach(this.days, (d: DoctorDayView) => {
             Column() {
               Text(d.isToday ? '今天' : d.weekday)
-                .fontSize(12)
+                .fontSize(17)
                 .fontColor(d.date === this.visitDate ? $r('app.color.text_white') : $r('app.color.text_secondary'))
               Text(d.mmdd)
-                .fontSize(14).fontWeight(d.date === this.visitDate ? 700 : 500)
+                .fontSize(20).fontWeight(d.date === this.visitDate ? 700 : 500)
                 .fontColor(d.date === this.visitDate ? $r('app.color.text_white') : $r('app.color.text_primary'))
                 .margin({ top: 4 })
             }
-            .width(64).height(66).justifyContent(FlexAlign.Center)
+            .width(72).height(74).justifyContent(FlexAlign.Center)
             .borderRadius($r('app.float.radius_md'))
             .backgroundColor(d.date === this.visitDate ? $r('app.color.primary') : $r('app.color.bg_card'))
             .margin({ right: 10 })
@@ -84,9 +104,27 @@ struct DoctorList {
         }.padding(16)
       }.scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Off).width('100%')
 
+      // 挂号级别筛选 Tab：全部 / 普通号 / 专家号 / 主任医师号
+      Scroll() {
+        Row() {
+          ForEach(LEVEL_TABS, (t: LevelTab) => {
+            Text(t.label)
+              .fontSize(18)
+              .fontWeight(this.selectedLevelId === t.levelId ? 600 : 400)
+              .fontColor(this.selectedLevelId === t.levelId ? $r('app.color.text_white') : $r('app.color.text_secondary'))
+              .padding({ left: 16, right: 16, top: 10, bottom: 10 })
+              .borderRadius(20)
+              .backgroundColor(this.selectedLevelId === t.levelId ? $r('app.color.primary') : $r('app.color.bg_card'))
+              .margin({ right: 10 })
+              .onClick(() => { this.selectedLevelId = t.levelId })
+          }, (t: LevelTab) => String(t.levelId))
+        }.padding({ left: 16, right: 16 })
+      }.scrollable(ScrollDirection.Horizontal).scrollBar(BarState.Off).width('100%')
+      .margin({ bottom: 4 })
+
       if (this.doctors().length === 0) {
         Column() { Text('当日暂无号源')
-            .fontSize(14).fontColor($r('app.color.text_hint'))
+            .fontSize(20).fontColor($r('app.color.text_hint'))
             .padding({top:40}) }.layoutWeight(1)
       } else {
         List() {
@@ -96,7 +134,7 @@ struct DoctorList {
                 Row() {
                   AvatarIcon({ name: g.doctorName, iconSize: 56 })
                   Column() {
-                    Text(g.doctorName).fontSize(17).fontWeight(700)
+                    Text(g.doctorName).fontSize(21).fontWeight(700)
                       .fontColor($r('app.color.text_primary'))
                     // TODO 成员 C：拿职称/简介（这里可以调医生详情接口单独加）
                   }.margin({ left: 14 }).layoutWeight(1).alignItems(HorizontalAlign.Start)
@@ -106,16 +144,16 @@ struct DoctorList {
                   ForEach(g.items, (s: SlotSummary) => {
                     Column() {
                       Text(`${Format.time(s.startTime)}-${Format.time(s.endTime)}`)
-                        .fontSize(13)
+                        .fontSize(21)
                         .fontColor(s.remainingQuota <= 0 ? $r('app.color.disabled') : $r('app.color.text_primary'))
                       Row() {
                         FeeTag({ fen: s.feeFen, iconSize: 'sm' })
                         Text(`余${s.remainingQuota}`)
-                          .fontSize(11).fontColor(s.remainingQuota <= 0 ? $r('app.color.disabled') : $r('app.color.text_hint'))
+                          .fontSize(19).fontColor(s.remainingQuota <= 0 ? $r('app.color.disabled') : $r('app.color.text_hint'))
                           .margin({ left: 8 })
                       }.margin({ top: 6 })
                     }
-                    .width('29%').padding(12).margin(6)
+                    .width('45%').padding(12).margin(6)
                     .justifyContent(FlexAlign.Center)
                     .borderRadius($r('app.float.radius_md'))
                     .borderWidth(1)

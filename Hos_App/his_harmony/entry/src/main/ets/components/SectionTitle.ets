@@ -15,14 +15,14 @@ export struct SectionTitle {
   build() {
     Row() {
       Row()
-        .width($r('app.float.sp_4'))
-        .height($r('app.float.fs_18'))
+        .width(4)
+        .height(23)
         .backgroundColor($r('app.color.primary'))
         .borderRadius($r('app.float.radius_sm'))
-        .margin({ right: $r('app.float.sp_8') })
+        .margin({ right: 8 })
 
       Text(this.title)
-        .fontSize(20)
+        .fontSize(23)
         .fontWeight(FontWeight.Bold)
         .fontColor(this.titleColor)
         .layoutWeight(1)
@@ -30,21 +30,21 @@ export struct SectionTitle {
       if (this.moreText && this.moreText.length > 0) {
         Row() {
           Text(this.moreText)
-            .fontSize(20)
+            .fontSize(23)
             .fontColor($r('app.color.text_hint'))
           Text(' ›')
-            .fontSize(20)
+            .fontSize(23)
             .fontColor($r('app.color.text_hint'))
         }
-        .padding({ left: $r('app.float.sp_8'), right: $r('app.float.sp_8') })
-        .height($r('app.float.btn_height_sm'))
+        .padding({ left: 8, right: 8 })
+        .height(36)
         .onClick(() => this.onMore && this.onMore())
       }
     }
     .width('100%')
     .padding({
-      left: $r('app.float.sp_16'), right: $r('app.float.sp_8'),
-      top: $r('app.float.sp_16'), bottom: $r('app.float.sp_8')
+      left: 20, right: 12,
+      top: 24, bottom: 10
     })
   }
 }

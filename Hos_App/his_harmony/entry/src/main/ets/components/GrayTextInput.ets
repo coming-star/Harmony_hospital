@@ -30,7 +30,7 @@ export struct GrayTextInput {
     Column() {
       if (this.label.length > 0) {
         Text(this.label)
-          .fontSize($r('app.float.fs_20'))
+          .fontSize(22)
           .fontWeight(500)
           .fontColor($r('app.color.text_primary'))
           .width('100%')
@@ -39,25 +39,19 @@ export struct GrayTextInput {
 
       Row() {
         TextInput({ placeholder: this.placeholder, text: this.value })
-          .type(this.rightEye ? (this.eyeOpen ? InputType.Normal : InputType.Password) : this.type)
+          .type(this.type)
           .backgroundColor(Color.Transparent)
           .layoutWeight(1)
-          .height(52)
+          .height(54)
           .placeholderColor($r('app.color.text_hint'))
           .fontColor($r('app.color.text_primary'))
-          .fontSize($r('app.float.fs_28'))
+          .fontSize(30)
           .onChange((v) => { this.value = v })
           .onSubmit(() => { if (this.onSubmit) this.onSubmit() })
-
-        if (this.rightEye) {
-          Text(this.eyeOpen ? '🙈' : '👁').fontSize(24)
-            .width(36).height(36).textAlign(TextAlign.Center)
-            .onClick(() => { this.eyeOpen = !this.eyeOpen })
-        }
       }
       .width('100%')
       .padding({ left: 12, right: 8 })
-      .height(56)
+      .height(60)
       .backgroundColor($r('app.color.input_bg'))
       .borderRadius($r('app.float.radius_md'))
     }

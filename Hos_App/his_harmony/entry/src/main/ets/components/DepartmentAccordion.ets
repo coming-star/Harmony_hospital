@@ -45,16 +45,16 @@ export struct DepartmentAccordion {
   @Builder SearchBar() {
     Row() {
       SymbolGlyph($r(AppIcon.search))
-        .fontSize(24)
-        .margin({ left: 14, right: 8 })
+        .fontSize(26)
+        .margin({ left: 20, right: 8 })
       TextInput({ placeholder: '搜索科室', text: this.search })
-        .fontSize(22)
+        .fontSize(30)
         .backgroundColor(Color.Transparent)
-        .layoutWeight(1).height(44)
+        .layoutWeight(1).height(60)
         .placeholderColor($r('app.color.text_hint'))
         .onChange(v => this.search = v)
     }
-    .width('92%').height(52)
+    .width('92%').height(60)
     .backgroundColor($r('app.color.input_bg'))
     .borderRadius(999)
     .margin({ top: 16, bottom: 16, left: 16, right: 16 })
@@ -89,19 +89,19 @@ export struct DepartmentAccordion {
                 Column() {
                   Row() {
                     Stack() {
-                      Circle().width(52).height(52).borderRadius(14).backgroundColor($r('app.color.primary_light'))
-                      StethoscopeIcon({ customSize: 24, color: $r('app.color.primary') })
+                      Circle().width(56).height(56).borderRadius(14).backgroundColor($r('app.color.primary_light'))
+                      StethoscopeIcon({ customSize: 52, color: $r('app.color.primary') })
                     }.margin({ right: 14 })
                     Column() {
                       Text(l1.name)
-                        .fontSize(19)
+                        .fontSize(23)
                         .fontWeight(700)
                         .fontColor($r('app.color.text_primary'))
                       if (l1.description) {
                         Text(l1.description)
-                          .fontSize(14)
+                          .fontSize(17)
                           .fontColor($r('app.color.text_secondary'))
-                          .margin({ top: 4 })
+                          .margin({ top: 6 })
                           .maxLines(2)
                           .textOverflow({ overflow: TextOverflow.Ellipsis })
                       }
@@ -128,14 +128,14 @@ export struct DepartmentAccordion {
                       Column() {
                         Row() {
                           Text(l2.name)
-                            .fontSize(17)
+                            .fontSize(21)
                             .fontColor($r('app.color.text_primary'))
                             .layoutWeight(1)
                           SymbolGlyph($r(AppIcon.forward))
-                            .fontSize(20)
+                            .fontSize(22)
                         }
                         .width('90%')
-                        .padding({ top: 12, bottom: 12, left: 16, right: 16 })
+                        .padding({ top: 16, bottom: 16, left: 16, right: 16 })
                         .margin({ top: 0, bottom: 0, left: 16, right: 16 })
                         .border({ width: { bottom: 1 }, color: { bottom: $r('app.color.bg_page') } })
                       }

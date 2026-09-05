@@ -44,13 +44,13 @@ export struct MineTab {
   }
 
   @Builder BlueTopHeader() {
-    Stack({alignContent:Alignment.BottomStart}) {
+    Stack({alignContent:Alignment.Center}) {
       Column()
         .width('100%').height(180)
         .backgroundColor($r('app.color.primary'))
 
       Row() {
-        AvatarIcon({ name: userStore.nickname || '健康用户', iconSize: 72 })
+        AvatarIcon({ name: userStore.nickname || '健康用户', iconSize: 72, bg: $r('app.color.primary_light') })
         Column() {
           Text(userStore.nickname ? userStore.nickname : '健康用户')
             .fontSize(28).fontWeight(800).fontColor($r('app.color.text_white'))
@@ -64,8 +64,9 @@ export struct MineTab {
           }
         }.margin({ left: 16 }).layoutWeight(1).alignItems(HorizontalAlign.Start)
       }
-      .width('92%').padding({ left: 0, right: 0, bottom: 20 })
-      .margin({ left: 16, right: 16, bottom: 10 })   // 底部浮到下方白卡
+      .width('92%')
+      .margin({ left: 16, right: 16 })
+      .alignSelf(ItemAlign.Start)
     }
     .width('100%').height(180)
   }
@@ -74,19 +75,19 @@ export struct MineTab {
     Row() {
       // 图标方框（参考图：左灰方框）
       Stack() {
-        Column().width(44).height(44).borderRadius(10).backgroundColor($r('app.color.primary_light'))
+        Column().width(48).height(48).borderRadius(10).backgroundColor($r('app.color.primary_light'))
         SymbolGlyph($r(r.icon))
-          .fontSize(26)
+          .fontSize(30)
       }.margin({ right: 14 })
 
       Column() {
-        Text(r.title).fontSize(20).fontWeight(600).fontColor($r('app.color.text_primary'))
-        Text(r.sub).fontSize(16).fontColor($r('app.color.text_secondary')).margin({ top: 6 })
+        Text(r.title).fontSize(22).fontWeight(600).fontColor($r('app.color.text_primary'))
+        Text(r.sub).fontSize(18).fontColor($r('app.color.text_secondary')).margin({ top: 6 })
       }.layoutWeight(1).alignItems(HorizontalAlign.Start)
       SymbolGlyph($r(AppIcon.forward))
-        .fontSize(28)
+        .fontSize(30)
     }
-    .width('92%').padding(18).alignSelf(ItemAlign.Center)
+    .width('92%').padding(20).alignSelf(ItemAlign.Center)
     .backgroundColor($r('app.color.bg_card')).borderRadius(16)
     .margin({ top: 12 })
     .onClick(() => this.click(r))
@@ -148,6 +149,6 @@ export struct MineTab {
     }
     .width('100%').height('100%')
     .backgroundColor($r('app.color.bg_page'))
-    .bindSheet($$this.logoutShow, this.logoutDialog(), { height: 280, preferType: SheetType.CENTER, showClose: false, dragBar: true })
+    .bindSheet($$this.logoutShow, this.logoutDialog(), { height: 300, preferType: SheetType.CENTER, showClose: false, dragBar: true, backgroundColor: Color.White })
   }
 }

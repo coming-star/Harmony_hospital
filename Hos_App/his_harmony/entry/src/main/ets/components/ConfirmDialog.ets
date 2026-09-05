@@ -39,40 +39,40 @@ export struct ConfirmDialog {
   build() {
     Column() {
       Text(this.title)
-        .fontSize($r('app.float.fs_18'))
+        .fontSize(26)
         .fontWeight(FontWeight.Bold)
         .fontColor($r('app.color.text_primary'))
-        .margin({ top: $r('app.float.sp_20'), bottom: $r('app.float.sp_12') })
+        .margin({ top: 24, bottom: 16 })
 
       Text(this.message)
-        .fontSize($r('app.float.fs_14'))
+        .fontSize(24)
         .fontColor($r('app.color.text_secondary'))
         .textAlign(TextAlign.Center)
-        .margin({ left: $r('app.float.sp_20'), right: $r('app.float.sp_20'), bottom: $r('app.float.sp_24') })
+        .margin({ left: 20, right: 20, bottom: 28 })
         .layoutWeight(1)
 
       Row() {
         Button(this.cancelText, { type: ButtonType.Normal })
           .layoutWeight(1)
-          .height($r('app.float.btn_height_md'))
+          .height(48)
           .backgroundColor($r('app.color.bg_page'))
           .fontColor($r('app.color.text_secondary'))
-          .fontSize($r('app.float.fs_16'))
-          .margin({ right: $r('app.float.sp_12') })
+          .fontSize(22)
+          .margin({ right: 12 })
           .onClick(() => this.no())
 
         Button(this.confirmText, { type: ButtonType.Normal })
           .layoutWeight(1)
-          .height($r('app.float.btn_height_md'))
+          .height(48)
           .backgroundColor(this.danger ? $r('app.color.danger') : $r('app.color.primary'))
           .fontColor($r('app.color.text_white'))
-          .fontSize($r('app.float.fs_16'))
+          .fontSize(22)
           .onClick(() => this.ok())
       }
       .width('100%')
-      .padding({ left: $r('app.float.sp_20'), right: $r('app.float.sp_20'), bottom: $r('app.float.sp_20') })
+      .padding({ left: 20, right: 20, bottom: 20 })
     }
-    .width('80%')
+    .width('85%')
     .backgroundColor($r('app.color.bg_card'))
     .borderRadius($r('app.float.radius_lg'))
   }
