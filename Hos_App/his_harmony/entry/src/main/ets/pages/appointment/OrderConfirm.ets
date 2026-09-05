@@ -28,8 +28,22 @@ struct OrderConfirm {
     const p: Record<string, Object> | undefined = router.getParams() as Record<string, Object> | undefined
     if (!p) return
     this.slotId = Number(p['slotId']); this.contactId = Number(p['contactId'])
-    // 信息展示：走 slot 接口 + contact 列表（slot 没有按 slotId 查询，这里偷懒用 departmentId+date 拉匹配）
-    // TODO 成员 C：后端加 GET /api/slots/{slotId} 最干净；没加就用 listSlots 取到当日再 find
+    // 从路由参数恢复号源信息（前端传参，绕开"后端无按 slotId 查号源接口"）
+    if (p['doctorName']) {
+      this.slot = {
+        slotId: this.slotId,
+        doctorId: 0,
+        doctorName: String(p['doctorName']),
+        departmentId: 0,
+        levelId: 0,
+        levelName: String(p['levelName']),
+        feeFen: Number(p['feeFen']),
+        visitDate: String(p['visitDate']),
+        startTime: String(p['startTime']),
+        endTime: String(p['endTime']),
+        remainingQuota: 1
+      }
+    }
     const contacts: PatientContact[] = await contactApi.listContacts()
     this.contact = contacts.find((c: PatientContact) => c.id === this.contactId)
   }

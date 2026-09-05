@@ -18,6 +18,12 @@ import { promptAction } from '@kit.ArkUI'
 @Component
 struct ContactSelect {
   @State slotId: number = 0
+  @State doctorName: string = ''
+  @State levelName: string = ''
+  @State feeFen: number = 0
+  @State visitDate: string = ''
+  @State startTime: string = ''
+  @State endTime: string = ''
   @State list: PatientContact[] = []
   @State selectedId: number = 0
   @State addSheet: boolean = false
@@ -27,7 +33,15 @@ struct ContactSelect {
 
   async aboutToAppear(): Promise<void> {
     const p: Record<string, Object> | undefined = router.getParams() as Record<string, Object> | undefined
-    if (p && p['slotId']) this.slotId = Number(p['slotId'])
+    if (p) {
+      if (p['slotId']) this.slotId = Number(p['slotId'])
+      this.doctorName = String(p['doctorName'] ?? '')
+      this.levelName = String(p['levelName'] ?? '')
+      this.feeFen = Number(p['feeFen'] ?? 0)
+      this.visitDate = String(p['visitDate'] ?? '')
+      this.startTime = String(p['startTime'] ?? '')
+      this.endTime = String(p['endTime'] ?? '')
+    }
     await this.load()
   }
   private async load(): Promise<void> {
@@ -35,7 +49,16 @@ struct ContactSelect {
   }
   private goConfirm(): void {
     if (!this.selectedId) { promptAction.showToast({ message: '请选择就诊人' }); return }
-    router.pushUrl({ url: Route.ORDER_CONFIRM, params: { slotId: this.slotId, contactId: this.selectedId } })
+    router.pushUrl({ url: Route.ORDER_CONFIRM, params: {
+      slotId: this.slotId,
+      doctorName: this.doctorName,
+      levelName: this.levelName,
+      feeFen: this.feeFen,
+      visitDate: this.visitDate,
+      startTime: this.startTime,
+      endTime: this.endTime,
+      contactId: this.selectedId
+    } })
   }
   private async submitAdd(): Promise<void> {
     if (!this.addName.trim()) { promptAction.showToast({ message:'请输入姓名' }); return }

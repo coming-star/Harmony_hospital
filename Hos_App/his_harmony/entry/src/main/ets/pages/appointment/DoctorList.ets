@@ -55,7 +55,15 @@ struct DoctorList {
   }
   private pickSlot(s: SlotSummary): void {
     if (s.remainingQuota <= 0) { promptAction.showToast({ message:'该时段已约满' }); return }
-    router.pushUrl({ url: Route.CONTACT_SELECT, params: { slotId: s.slotId } })
+    router.pushUrl({ url: Route.CONTACT_SELECT, params: {
+      slotId: s.slotId,
+      doctorName: s.doctorName,
+      levelName: s.levelName,
+      feeFen: s.feeFen,
+      visitDate: s.visitDate,
+      startTime: s.startTime,
+      endTime: s.endTime
+    } })
   }
 
   build() {

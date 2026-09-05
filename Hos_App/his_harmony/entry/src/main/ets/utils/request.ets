@@ -47,7 +47,7 @@ function toast(msg: string, duration: number = 1500): void {
 function showLoading(on: boolean): void {
   if (!on) return
   try {
-    promptAction.showDialog({ message: '加载中…' })
+    promptAction.showToast({ message: '加载中…' })
   } catch (e) {
   }
 }

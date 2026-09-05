@@ -1,5 +1,6 @@
 package com.neusoft.hisspringboot.modules.schedule.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
@@ -34,9 +35,11 @@ public record SlotSummary(
         @Schema(description = "就诊日期", example = "2026-09-04")
         LocalDate visitDate,
 
+        @JsonFormat(pattern = "HH:mm:ss")
         @Schema(description = "时段开始时间", example = "08:00:00")
         LocalTime startTime,
 
+        @JsonFormat(pattern = "HH:mm:ss")
         @Schema(description = "时段结束时间", example = "08:30:00")
         LocalTime endTime,
 

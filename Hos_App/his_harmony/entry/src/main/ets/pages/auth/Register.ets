@@ -52,9 +52,9 @@ struct Register {
       AppBar({ title: '注册' })
       Scroll() {
         Column() {
-          StethoscopeIcon({ customSize: 108 }).margin({ top: 40, bottom: 24 })
+          StethoscopeIcon({ customSize: 108 }).margin({ top: 20, bottom: 16 })
           Text('创建账号').fontSize(32).fontWeight(800).fontColor($r('app.color.text_primary')).margin({bottom:8})
-          Text('注册后即可在线预约挂号').fontSize(18).fontColor($r('app.color.text_secondary')).margin({bottom:36})
+          Text('注册后即可在线预约挂号').fontSize(15).fontColor($r('app.color.text_secondary')).margin({bottom:24})
 
           Column({ space: 25 }) {
             GrayTextInput({ label:'手机号', placeholder:'请输入手机号', value: $phone, type: InputType.PhoneNumber })
@@ -65,20 +65,20 @@ struct Register {
           Row() {
             Checkbox({name:'agree'}).select(this.agreed).selectedColor($r('app.color.primary'))
               .onChange(v => this.agreed = v)
-            Text('我已阅读并同意').fontSize(20).fontColor($r('app.color.text_secondary')).margin({left:6})
-            Text('《用户协议》').fontSize(20).fontColor($r('app.color.text_blue'))
-            Text('与').fontSize(20).fontColor($r('app.color.text_secondary'))
-            Text('《隐私政策》').fontSize(20).fontColor($r('app.color.text_blue'))
+            Text('我已阅读并同意').fontSize(14).fontColor($r('app.color.text_secondary')).margin({left:6})
+            Text('《用户协议》').fontSize(14).fontColor($r('app.color.text_blue'))
+            Text('与').fontSize(14).fontColor($r('app.color.text_secondary'))
+            Text('《隐私政策》').fontSize(14).fontColor($r('app.color.text_blue'))
           }.width('80%').justifyContent(FlexAlign.Start).margin({ top: 20, bottom: 32 })
 
           PrimaryButton({ label:'注册并登录', isEnabled:!this.loading, onTap: () => this.submit() })
             .width('80%').margin({ bottom: 16 })
 
           Row() {
-            Text('已有账号？').fontSize(20).fontColor($r('app.color.text_hint'))
-            Text('去登录').fontSize(20).fontColor($r('app.color.text_blue')).fontWeight(600)
+            Text('已有账号？').fontSize(14).fontColor($r('app.color.text_hint'))
+            Text('去登录').fontSize(14).fontColor($r('app.color.text_blue')).fontWeight(600)
               .onClick(() => { try { router.replaceUrl({ url: Route.LOGIN }) } catch (_) {} })
-          }.margin({ top: 8, bottom: 40 })
+          }.margin({ top: 8, bottom: 24 })
         }.width('100%').alignItems(HorizontalAlign.Center)
       }.layoutWeight(1).scrollBar(BarState.Off)
     }.width('100%').height('100%').backgroundColor(Color.White)
