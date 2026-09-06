@@ -1,17 +1,21 @@
 /**
- * 【AI Tab】AI 健康管家对话页（已接入后端 /api/ai/chat，DeepSeek 多轮对话）。
+ * 【AI Tab】AI 健康管家对话页（已接入后端 /api/ai/chat，DeepSeek 多轮对话 + 号源卡片）。
  * 顶部蓝色 AppBar（"AI健康管家"）
- * + 气泡对话（左侧 AI 蓝灰气泡 / 右侧用户 品牌蓝 气泡）
+ * + 气泡对话（左侧 AI 蓝灰气泡 / 右侧用户 品牌蓝 气泡；AI 气泡可带号源卡片）
  * + 底部输入栏（灰底圆角输入框"输入你的问题…"+ 蓝色圆角发送按钮）
  */
 import { AppBar } from '../components/AppBar'
 import { AppIcon } from '../utils/icons'
 import { Format } from '../utils/format'
+import { FeeTag } from '../components/FeeTag'
+import { Route } from '../utils/theme'
 import * as aiApi from '../api/ai'
 import type { ChatMessageItem } from '../api/ai'
+import type { SlotSummary } from '../types'
+import router from '@ohos.router'
 import { inputMethod } from '@kit.IMEKit'
 
-interface Msg { id: string; role: 'user'|'ai'; content: string }
+interface Msg { id: string; role: 'user'|'ai'; content: string; slots?: SlotSummary[] }
 
 @Component
 export struct AITab {
@@ -36,7 +40,7 @@ export struct AITab {
         messages.push({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.content })
       }
       const out = await aiApi.aiChat({ messages })
-      this.list.push({ id: Format.uuid(), role: 'ai', content: out.reply })
+      this.list.push({ id: Format.uuid(), role: 'ai', content: out.reply, slots: out.slots })
     } catch (_) {
       // request.ets 已统一 toast；这里补一条降级提示，避免界面无反馈
       this.list.push({ id: Format.uuid(), role: 'ai', content: '抱歉，AI 服务暂时不可用，请稍后再试。' })
@@ -44,16 +48,53 @@ export struct AITab {
     this.scroller.scrollEdge(Edge.Bottom)
   }
 
+  /** 号源卡片：点击跳就诊人选择，复用现有预约流程 */
+  @Builder SlotCard(s: SlotSummary) {
+    Row() {
+      Column() {
+        Text(s.doctorName).fontSize(20).fontWeight(600).fontColor($r('app.color.text_primary'))
+        Text(`${s.levelName} · ${s.visitDate} ${Format.time(s.startTime)}-${Format.time(s.endTime)}`)
+          .fontSize(16).fontColor($r('app.color.text_secondary')).margin({ top: 4 })
+      }.layoutWeight(1).alignItems(HorizontalAlign.Start)
+      Column() {
+        FeeTag({ fen: s.feeFen, iconSize: 'sm' })
+        Text(`余${s.remainingQuota}`).fontSize(15).fontColor($r('app.color.text_hint')).margin({ top: 4 })
+      }.alignItems(HorizontalAlign.End)
+    }
+    .width('100%').padding(12)
+    .backgroundColor($r('app.color.primary_light'))
+    .borderRadius($r('app.float.radius_md'))
+    .margin({ top: 8 })
+    .onClick(() => {
+      router.pushUrl({ url: Route.CONTACT_SELECT, params: {
+        slotId: s.slotId,
+        doctorName: s.doctorName,
+        levelName: s.levelName,
+        feeFen: s.feeFen,
+        visitDate: s.visitDate,
+        startTime: s.startTime,
+        endTime: s.endTime
+      } })
+    })
+  }
+
   @Builder Bubble(m: Msg) {
     Row() {
       if (m.role === 'ai') {
-        Column() { Text(m.content)
+        Column() {
+          Text(m.content)
             .fontSize(24).fontColor($r('app.color.text_primary'))
-            .padding(14).maxLines(999) }
-          .backgroundColor($r('app.color.bg_card'))
-          .borderRadius($r('app.float.radius_md'))
-          .margin({ right: 64 })
-          .layoutWeight(1)
+            .padding(14).maxLines(999)
+          if (m.slots && m.slots.length > 0) {
+            ForEach(m.slots, (s: SlotSummary) => {
+              this.SlotCard(s)
+            }, (s: SlotSummary) => String(s.slotId))
+          }
+        }
+        .backgroundColor($r('app.color.bg_card'))
+        .borderRadius($r('app.float.radius_md'))
+        .margin({ right: 64 })
+        .layoutWeight(1)
       } else {
         Blank()
         Column() { Text(m.content)
