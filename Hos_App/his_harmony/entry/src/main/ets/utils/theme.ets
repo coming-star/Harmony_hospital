@@ -50,6 +50,7 @@ export class Route {
   static readonly HOME          = 'pages/Index'
   static readonly LOGIN         = 'pages/auth/Login'
   static readonly REGISTER      = 'pages/auth/Register'
+  static readonly FORGET_PASSWORD = 'pages/auth/ForgotPassword'
   static readonly APPOINTMENT   = 'pages/appointment/AppointmentIndex'
   static readonly DEPT_SELECT   = 'pages/appointment/DepartmentSelect'
   static readonly DOCTOR_LIST   = 'pages/appointment/DoctorList'
@@ -62,6 +63,7 @@ export class Route {
   static readonly ORDER_RECORD  = 'pages/mine/OrderRecord'
   static readonly CONTACT_MGNT  = 'pages/mine/ContactManage'
   static readonly SETTINGS      = 'pages/mine/Settings'
+  static readonly MESSAGE_LIST  = 'pages/mine/MessageList'
 }
 
 /**

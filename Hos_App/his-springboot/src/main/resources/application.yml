@@ -42,6 +42,15 @@ spring:
   cache:
     type: redis
 
+# RocketMQ 5.3.0：订单超时延迟消息 + 订单状态事件(站内信)。
+# NameServer 未启动时应用仍可正常运行：发送失败只打 warn 日志，超时取消由定时兜底任务(5 分钟)保证。
+rocketmq:
+  name-server: ${ROCKETMQ_NAME_SERVER:localhost:9876}
+  producer:
+    group: his_order_producer_group
+    send-message-timeout: 3000
+    retry-times-when-send-failed: 2
+
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true

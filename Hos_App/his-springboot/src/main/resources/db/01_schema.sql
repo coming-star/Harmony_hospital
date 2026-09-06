@@ -270,7 +270,30 @@ CREATE TABLE ai_message (
   conversation_id BIGINT UNSIGNED NOT NULL COMMENT '属于哪个会话',
   role VARCHAR(16) NOT NULL COMMENT '这句话是谁说的：USER患者发的/ASSISTANT AI回复的/SYSTEM系统提示词/TOOL AI调用查号源等工具时的记录',
   content TEXT NOT NULL,
+  extra_json JSON DEFAULT NULL COMMENT '扩展数据：ASSISTANT 消息附带的号源卡片列表(SlotSummary JSON数组)，重开会话时用于还原卡片',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_message_conversation_created (conversation_id, created_at)
 ) ENGINE=InnoDB COMMENT='AI 对话消息；须做长度限制与敏感日志隔离';
+
+-- ============================================================
+-- 六、消息中心：站内信
+-- ============================================================
+
+-- 站内信：订单状态通知（预约成功/患者取消/管理员取消/超时取消）与就诊提醒都写进这张表。
+-- 数据来源：订单事件由 RocketMQ 消费者（order_event_topic）写入；就诊提醒由定时任务每 10 分钟扫描写入。
+-- App 端"我的-消息"页拉取展示；未读数用于"我的"Tab 图标红点。
+CREATE TABLE message (
+  id BIGINT UNSIGNED NOT NULL COMMENT '雪花主键',
+  user_id BIGINT UNSIGNED NOT NULL COMMENT '消息归属的登录账号',
+  type VARCHAR(32) NOT NULL COMMENT '消息类型：ORDER_PAY_SUCCESS预约成功/ORDER_CANCELLED订单已取消/ORDER_TIMEOUT订单超时取消/VISIT_REMINDER就诊提醒',
+  title VARCHAR(100) NOT NULL COMMENT '消息标题，列表页直接展示',
+  content VARCHAR(500) NOT NULL COMMENT '消息正文',
+  biz_id BIGINT UNSIGNED DEFAULT NULL COMMENT '关联业务ID，一般是订单ID，点击可跳订单详情',
+  dedup_key VARCHAR(100) DEFAULT NULL COMMENT '防重键：订单事件为"事件类型:订单ID"，就诊提醒为"订单ID:REMIND_24H/REMIND_3H"；唯一索引保证不重复发送',
+  is_read TINYINT NOT NULL DEFAULT 0 COMMENT '是否已读：0未读 1已读',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_message_dedup (dedup_key),
+  KEY idx_message_user_read_created (user_id, is_read, created_at)
+) ENGINE=InnoDB COMMENT='站内信(消息中心)；订单通知与就诊提醒共用';

@@ -4,7 +4,7 @@
 
 ## 技术栈
 
-- **服务端**：Spring Boot 3、JDK 17、MyBatis-Plus、MySQL 8、Redis 7、Spring Security + JWT、Knife4j(OpenAPI 3)
+- **服务端**：Spring Boot 3、JDK 17、MyBatis-Plus、MySQL 8、Redis 7、RocketMQ 5.3.0、Spring Security + JWT、Knife4j(OpenAPI 3)
 - **AI**：DeepSeek（deepseek-chat，OpenAI 兼容协议，JDK HttpClient 直连）
 - **管理端**：Vue 3、Vite、Element Plus、Pinia、Axios
 - **移动端**：HarmonyOS / ArkTS / ArkUI / DevEco Studio

@@ -3,6 +3,7 @@
     "pages/Index",
     "pages/auth/Login",
     "pages/auth/Register",
+    "pages/auth/ForgotPassword",
     "pages/appointment/AppointmentIndex",
     "pages/appointment/DepartmentSelect",
     "pages/appointment/DoctorList",
@@ -14,6 +15,7 @@
     "pages/mine/MineIndex",
     "pages/mine/OrderRecord",
     "pages/mine/ContactManage",
-    "pages/mine/Settings"
+    "pages/mine/Settings",
+    "pages/mine/MessageList"
   ]
 }

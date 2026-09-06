@@ -1,12 +1,19 @@
 package com.neusoft.hisspringboot.modules.ai.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neusoft.hisspringboot.common.BusinessException;
 import com.neusoft.hisspringboot.common.ErrorCode;
+import com.neusoft.hisspringboot.modules.ai.dto.AiMessageItem;
 import com.neusoft.hisspringboot.modules.ai.dto.ChatMessage;
 import com.neusoft.hisspringboot.modules.ai.dto.ChatResponse;
+import com.neusoft.hisspringboot.modules.ai.dto.ConversationItem;
+import com.neusoft.hisspringboot.modules.ai.entity.AiConversation;
+import com.neusoft.hisspringboot.modules.ai.entity.AiMessage;
+import com.neusoft.hisspringboot.modules.ai.mapper.AiConversationMapper;
+import com.neusoft.hisspringboot.modules.ai.mapper.AiMessageMapper;
 import com.neusoft.hisspringboot.modules.department.dto.DepartmentTreeNode;
 import com.neusoft.hisspringboot.modules.department.service.DepartmentService;
 import com.neusoft.hisspringboot.modules.schedule.dto.SlotSummary;
@@ -14,7 +21,9 @@ import com.neusoft.hisspringboot.modules.schedule.service.ScheduleSlotService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -22,6 +31,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -74,6 +84,11 @@ public class AiService {
     private final ObjectMapper objectMapper;
     private final DepartmentService departmentService;
     private final ScheduleSlotService scheduleSlotService;
+    private final AiConversationMapper aiConversationMapper;
+    private final AiMessageMapper aiMessageMapper;
+
+    /** 每次调用模型最多携带多少条历史消息，防止上下文过长 */
+    private static final int HISTORY_LIMIT = 20;
 
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(CONNECT_TIMEOUT)
@@ -141,7 +156,140 @@ public class AiService {
         if (reply == null || reply.isBlank()) {
             throw new BusinessException(ErrorCode.BUSINESS_RULE_VIOLATION, "AI 处理超时，请重新提问");
         }
-        return new ChatResponse(reply, collectedSlots);
+        return new ChatResponse(null, reply, collectedSlots);
+    }
+
+    /* ==================== 会话持久化：完整多会话管理 ==================== */
+
+    /**
+     * 会话内对话（落库版）：保存用户消息 → 按会话加载历史（最近 {@link #HISTORY_LIMIT} 条）
+     * → 调模型 → 保存 AI 回复（号源卡片写入 extra_json，重开会话可还原卡片）。
+     * conversationId 为空时自动新建会话（标题取首条内容前 20 字），并回传 conversationId。
+     */
+    public ChatResponse chatInConversation(Long userId, Long conversationId, String content) {
+        AiConversation conversation;
+        if (conversationId == null) {
+            conversation = new AiConversation();
+            conversation.setUserId(userId);
+            conversation.setTitle(buildTitle(content));
+            aiConversationMapper.insert(conversation);
+        } else {
+            conversation = requireConversation(userId, conversationId);
+        }
+
+        saveMessage(conversation.getId(), "USER", content, null);
+
+        ChatResponse out = chat(loadHistory(conversation.getId()));
+
+        saveMessage(conversation.getId(), "ASSISTANT", out.reply(), out.slots());
+
+        conversation.setLastMessageAt(LocalDateTime.now());
+        aiConversationMapper.updateById(conversation);
+
+        return new ChatResponse(conversation.getId(), out.reply(), out.slots());
+    }
+
+    /** 会话列表：按最后消息时间倒序 */
+    public List<ConversationItem> listConversations(Long userId) {
+        return aiConversationMapper.selectList(new LambdaQueryWrapper<AiConversation>()
+                        .eq(AiConversation::getUserId, userId)
+                        .orderByDesc(AiConversation::getLastMessageAt)
+                        .orderByDesc(AiConversation::getCreatedAt))
+                .stream()
+                .map(c -> new ConversationItem(c.getId(), c.getTitle(), c.getLastMessageAt()))
+                .toList();
+    }
+
+    /** 新建空会话（标题"新对话"，首次对话时由 chatInConversation 落消息） */
+    public ConversationItem createConversation(Long userId) {
+        AiConversation conversation = new AiConversation();
+        conversation.setUserId(userId);
+        conversation.setTitle("新对话");
+        aiConversationMapper.insert(conversation);
+        return new ConversationItem(conversation.getId(), conversation.getTitle(), conversation.getLastMessageAt());
+    }
+
+    /** 删除会话（逻辑删除，仅能删除自己的） */
+    public void deleteConversation(Long userId, Long conversationId) {
+        requireConversation(userId, conversationId);
+        aiConversationMapper.deleteById(conversationId);
+    }
+
+    /** 会话历史消息：按时间升序；ASSISTANT 消息附带 extra_json 解析出的号源卡片 */
+    public List<AiMessageItem> listMessages(Long userId, Long conversationId) {
+        requireConversation(userId, conversationId);
+        return aiMessageMapper.selectList(new LambdaQueryWrapper<AiMessage>()
+                        .eq(AiMessage::getConversationId, conversationId)
+                        .orderByAsc(AiMessage::getCreatedAt)
+                        .orderByAsc(AiMessage::getId))
+                .stream()
+                .map(this::toMessageItem)
+                .toList();
+    }
+
+    private AiMessageItem toMessageItem(AiMessage message) {
+        List<SlotSummary> slots = null;
+        if (message.getExtraJson() != null && !message.getExtraJson().isBlank()) {
+            try {
+                slots = objectMapper.readValue(message.getExtraJson(), new TypeReference<List<SlotSummary>>() {});
+            } catch (Exception e) {
+                log.warn("解析 AI 消息 extra_json 失败 id={}", message.getId(), e);
+            }
+        }
+        return new AiMessageItem(message.getId(), message.getRole(), message.getContent(), slots, message.getCreatedAt());
+    }
+
+    /** 校验会话存在且属于当前用户 */
+    private AiConversation requireConversation(Long userId, Long conversationId) {
+        AiConversation conversation = aiConversationMapper.selectById(conversationId);
+        if (conversation == null || !userId.equals(conversation.getUserId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "会话不存在");
+        }
+        return conversation;
+    }
+
+    private void saveMessage(Long conversationId, String role, String content, List<SlotSummary> slots) {
+        AiMessage message = new AiMessage();
+        message.setConversationId(conversationId);
+        message.setRole(role);
+        message.setContent(content);
+        if (slots != null && !slots.isEmpty()) {
+            try {
+                message.setExtraJson(objectMapper.writeValueAsString(slots));
+            } catch (Exception e) {
+                log.warn("序列化号源卡片失败 conversationId={}", conversationId, e);
+            }
+        }
+        aiMessageMapper.insert(message);
+    }
+
+    /** 从库里加载会话历史（最近 HISTORY_LIMIT 条），只带 USER/ASSISTANT 两种角色进模型 */
+    private List<ChatMessage> loadHistory(Long conversationId) {
+        List<AiMessage> all = aiMessageMapper.selectList(new LambdaQueryWrapper<AiMessage>()
+                .eq(AiMessage::getConversationId, conversationId)
+                .orderByAsc(AiMessage::getCreatedAt)
+                .orderByAsc(AiMessage::getId));
+        if (all.size() > HISTORY_LIMIT) {
+            all = all.subList(all.size() - HISTORY_LIMIT, all.size());
+        }
+        List<ChatMessage> history = new ArrayList<>();
+        for (AiMessage m : all) {
+            String role = "ASSISTANT".equals(m.getRole()) ? "assistant" : ("USER".equals(m.getRole()) ? "user" : null);
+            if (role == null) {
+                continue;
+            }
+            history.add(new ChatMessage(role, m.getContent()));
+        }
+        return history;
+    }
+
+    /** 会话标题：首条内容前 20 字 */
+    private String buildTitle(String content) {
+        String t = content == null ? "" : content.trim().replaceAll("\\s+", " ");
+        if (t.isEmpty()) {
+            return "新对话";
+        }
+        return t.length() > 20 ? t.substring(0, 20) : t;
     }
 
     private String systemPrompt() {

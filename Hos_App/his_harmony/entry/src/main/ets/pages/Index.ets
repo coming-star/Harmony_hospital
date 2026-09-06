@@ -6,6 +6,7 @@
 import { TAB_INDEX, TAB_KEYS, TAB_LABELS, TabKey, Theme, Route } from '../utils/theme'
 import { AppIcon } from '../utils/icons'
 import router from '@ohos.router'
+import * as messageApi from '../api/message'
 
 // 具体 Tab 内容页（目前是骨架 UI，由对应负责人补充真实接口数据与卡片 UI）
 import { HomeTab } from './HomeTab'
@@ -24,7 +25,14 @@ interface TabIconMap {
 @Component
 struct Index {
   @State currentIndex: number = TAB_INDEX.home
+  /** 站内信未读数：>0 时"我的"Tab 图标显示红点（api/message.ets refreshUnreadBadge 写入） */
+  @StorageProp('unreadMsgCount') unreadMsgCount: number = 0
   private tabKeys: TabKey[] = [...TAB_KEYS]
+
+  aboutToAppear(): void {
+    // 进 App 刷新未读数红点
+    messageApi.refreshUnreadBadge()
+  }
 
   private activeColor(key: TabKey): ResourceColor {
     return $r('app.color.primary')
@@ -52,9 +60,18 @@ struct Index {
 
   @Builder TabBuilder(key: TabKey, index: number) {
     Column() {
-      SymbolGlyph($r(this.iconFor(key)))
-        .fontSize(34)
-        .margin({ top: 8, bottom: 8 })
+      Stack({ alignContent: Alignment.TopEnd }) {
+        SymbolGlyph($r(this.iconFor(key)))
+          .fontSize(34)
+        // "我的"Tab 未读红点
+        if (key === 'mine' && this.unreadMsgCount > 0) {
+          Circle()
+            .width(10).height(10)
+            .fill($r('app.color.danger'))
+            .margin({ right: -4, top: 2 })
+        }
+      }
+      .margin({ top: 8, bottom: 8 })
       Text(this.labelFor(key))
         .fontSize(20)
         .fontColor(this.currentIndex === index ? this.activeColor(key) : $r('app.color.text_hint'))
@@ -83,6 +100,10 @@ struct Index {
     .width('100%')
     .height('100%')
     .backgroundColor($r('app.color.bg_page'))
-    .onChange((idx: number) => { this.currentIndex = idx })
+    .onChange((idx: number) => {
+      this.currentIndex = idx
+      // 切 Tab 顺带刷新未读数（成本低，保证红点及时性）
+      messageApi.refreshUnreadBadge()
+    })
   }
 }

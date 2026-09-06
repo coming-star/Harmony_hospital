@@ -72,6 +72,9 @@ public class SecurityConfig {
                                 "/api/admin/auth/login",
                                 "/api/app/auth/register",
                                 "/api/app/auth/login",
+                                "/api/app/auth/sms/send",
+                                "/api/app/auth/sms/login",
+                                "/api/app/auth/sms/reset-password",
                                 "/static/avatars/**"
                         ).permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

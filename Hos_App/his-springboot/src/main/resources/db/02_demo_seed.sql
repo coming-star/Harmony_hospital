@@ -143,7 +143,7 @@ CROSS JOIN (
 WHERE ((t.mask >> WEEKDAY(DATE_ADD(CURDATE(), INTERVAL d.offset_day DAY))) & 1) = 1;
 
 -- 扩充科室：新增眼科/口腔科/皮肤科三个一级科室，并补全内科、外科常见二级科室，
--- 让预约首页科室列表更丰满（这些新增科室暂不配置医生，仅用于科室展示）。
+-- 让预约首页科室列表更丰满。
 INSERT IGNORE INTO department
   (id, code, name, parent_id, department_type, description, sort_no, enabled)
 VALUES
@@ -162,6 +162,67 @@ VALUES
   (2501, 'EYE-GEN', '眼科门诊', 2005, 'CLINICAL', '常见眼病诊疗、视力检查与眼底病筛查。', 51, 1),
   (2601, 'STO-GEN', '口腔科门诊', 2006, 'CLINICAL', '补牙、拔牙、洁牙及口腔常见问题处理。', 61, 1),
   (2701, 'DERM-GEN', '皮肤科门诊', 2007, 'CLINICAL', '常见皮肤病门诊与过敏原检查。', 71, 1);
+
+-- 扩充医生（2026-09-06）：为此前无医生的 12 个二级科室补齐医生，全院医生增至 24 名。
+-- 职称与号别对应：主任医师→CHIEF(3003)、副主任医师→EXPERT(3002)、主治医师→GENERAL(3001)。
+INSERT IGNORE INTO doctor
+  (id, name, department_id, title, introduction, enabled)
+VALUES
+  (4011, '罗建平', 2105, '主任医师', '擅长糖尿病及其并发症、甲状腺疾病、痛风等代谢性疾病的综合管理。', 1),
+  (4012, '冯晓棠', 2105, '主治医师', '擅长糖尿病、肥胖症、血脂异常等内分泌代谢常见病诊治。', 1),
+  (4013, '郑国栋', 2106, '副主任医师', '擅长急慢性肾炎、肾病综合征及慢性肾功能不全的诊治与随访。', 1),
+  (4014, '沈慧兰', 2107, '主任医师', '擅长贫血、血小板减少、淋巴瘤等血液系统疾病的规范化诊疗。', 1),
+  (4015, '韩志强', 2108, '主治医师', '擅长各类感染性疾病、发热待查及肝病诊治。', 1),
+  (4016, '秦淑仪', 2109, '副主任医师', '擅长老年高血压、冠心病、骨质疏松等慢病共病综合管理。', 1),
+  (4017, '姚远航', 2110, '副主任医师', '擅长类风湿关节炎、系统性红斑狼疮、强直性脊柱炎等风湿免疫病。', 1),
+  (4018, '蒋文瀚', 2203, '主任医师', '擅长泌尿系结石、前列腺增生及泌尿系肿瘤的微创手术治疗。', 1),
+  (4019, '龚雪梅', 2204, '副主任医师', '擅长肺结节、食管癌及纵隔肿瘤的胸腔镜微创手术治疗。', 1),
+  (4020, '潘俊杰', 2205, '主任医师', '擅长颅脑外伤、脑出血及颅内肿瘤的神经外科手术治疗。', 1),
+  (4021, '邵一鸣', 2501, '主治医师', '擅长屈光不正、干眼症、结膜炎等眼科常见病诊治。', 1),
+  (4022, '阮清越', 2501, '副主任医师', '擅长白内障、青光眼及眼底病的诊断与手术治疗。', 1),
+  (4023, '邹海涛', 2601, '主治医师', '擅长补牙、根管治疗、拔牙及口腔修复等常见口腔诊疗。', 1),
+  (4024, '白若曦', 2701, '副主任医师', '擅长痤疮、湿疹、荨麻疹及过敏性皮肤病的诊治。', 1);
+
+-- 新增医生的号别关联（id 接 4110 顺延）。
+INSERT IGNORE INTO doctor_registration_level (id, doctor_id, level_id, enabled)
+VALUES
+  (4111, 4011, 3003, 1), (4112, 4012, 3001, 1), (4113, 4013, 3002, 1), (4114, 4014, 3003, 1),
+  (4115, 4015, 3001, 1), (4116, 4016, 3002, 1), (4117, 4017, 3002, 1), (4118, 4018, 3003, 1),
+  (4119, 4019, 3002, 1), (4120, 4020, 3003, 1), (4121, 4021, 3001, 1), (4122, 4022, 3002, 1),
+  (4123, 4023, 3001, 1), (4124, 4024, 3002, 1);
+
+-- 扩充排班规则（id 接 5010 顺延），时段/星期更分散，方便演示各日期都有号可约。
+INSERT IGNORE INTO schedule_rule
+  (id, level_id, rule_name, weekday_mask, period, slots_json, effective_start, effective_end, enabled)
+VALUES
+  (5011, 3003, '周二、周四、周六上午', 42, 'MORNING', JSON_ARRAY(JSON_OBJECT('start','08:00','end','08:30','quota',4), JSON_OBJECT('start','08:30','end','09:00','quota',4)), CURDATE(), NULL, 1),
+  (5012, 3002, '周一、周三、周五上午', 21, 'MORNING', JSON_ARRAY(JSON_OBJECT('start','09:00','end','09:30','quota',6), JSON_OBJECT('start','09:30','end','10:00','quota',6)), CURDATE(), NULL, 1),
+  (5013, 3001, '周二、周四、周六下午', 42, 'AFTERNOON', JSON_ARRAY(JSON_OBJECT('start','14:00','end','14:30','quota',10), JSON_OBJECT('start','14:30','end','15:00','quota',10)), CURDATE(), NULL, 1),
+  (5014, 3003, '周一、周五下午', 17, 'AFTERNOON', JSON_ARRAY(JSON_OBJECT('start','14:00','end','14:30','quota',4), JSON_OBJECT('start','14:30','end','15:00','quota',4)), CURDATE(), NULL, 1),
+  (5015, 3001, '周一至周日上午', 127, 'MORNING', JSON_ARRAY(JSON_OBJECT('start','09:00','end','09:30','quota',10), JSON_OBJECT('start','09:30','end','10:00','quota',10)), CURDATE(), NULL, 1),
+  (5016, 3002, '周六、周日上午', 96, 'MORNING', JSON_ARRAY(JSON_OBJECT('start','08:30','end','09:00','quota',6), JSON_OBJECT('start','09:00','end','09:30','quota',6)), CURDATE(), NULL, 1),
+  (5017, 3003, '周三、周六上午', 36, 'MORNING', JSON_ARRAY(JSON_OBJECT('start','08:30','end','09:00','quota',4), JSON_OBJECT('start','09:00','end','09:30','quota',4)), CURDATE(), NULL, 1),
+  (5018, 3001, '周一下午', 1, 'AFTERNOON', JSON_ARRAY(JSON_OBJECT('start','15:00','end','15:30','quota',10), JSON_OBJECT('start','15:30','end','16:00','quota',10)), CURDATE(), NULL, 1);
+
+-- 新增医生的排班关联（id 接 5510 顺延）；多条规则可被多位医生复用（模板复用）。
+-- 新医生号源无需手插：后端启动时 ScheduleSlotGeneratorService 会把规则展开为未来 14 天号源。
+INSERT IGNORE INTO doctor_schedule_rule
+  (id, doctor_id, schedule_rule_id, created_at)
+VALUES
+  (5511, 4011, 5011, NOW()),
+  (5512, 4012, 5013, NOW()),
+  (5513, 4013, 5012, NOW()),
+  (5514, 4014, 5017, NOW()),
+  (5515, 4015, 5015, NOW()),
+  (5516, 4016, 5012, NOW()),
+  (5517, 4017, 5016, NOW()),
+  (5518, 4018, 5011, NOW()),
+  (5519, 4019, 5012, NOW()),
+  (5520, 4020, 5014, NOW()),
+  (5521, 4021, 5015, NOW()),
+  (5522, 4022, 5016, NOW()),
+  (5523, 4023, 5018, NOW()),
+  (5524, 4024, 5012, NOW());
 
 -- 扩充演示患者账号（密码均为 password），用于制造多用户、多就诊人的挂号记录。
 INSERT IGNORE INTO sys_user

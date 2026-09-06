@@ -191,6 +191,25 @@ export interface AdminLoginRequest {
   password: string
 }
 
+// ============== 短信验证码登录 / 找回密码 ==============
+export type SmsScene = 'LOGIN' | 'RESET_PASSWORD'
+
+export interface SmsSendRequest {
+  phone: string
+  scene: SmsScene
+}
+
+export interface SmsLoginRequest {
+  phone: string
+  code: string
+}
+
+export interface SmsResetPasswordRequest {
+  phone: string
+  code: string
+  newPassword: string
+}
+
 // ============== 科室 / 医生 / 号源 ==============
 export interface DepartmentTreeNode {
   id: number
@@ -305,6 +324,23 @@ export interface DailyCount {
 export interface DepartmentCount {
   name: string
   count: number
+}
+
+// ============== 消息中心 ==============
+export type MessageType = 'ORDER_PAY_SUCCESS' | 'ORDER_CANCELLED' | 'ORDER_TIMEOUT' | 'VISIT_REMINDER' | 'PAYMENT_REMINDER'
+
+export interface MessageItem {
+  /** 消息 ID（字符串，防精度丢失） */
+  id: string
+  type: MessageType
+  title: string
+  content: string
+  /** 关联订单 ID（字符串，防精度丢失），可跳订单记录 */
+  bizId: string | null
+  /** 0 未读 1 已读 */
+  isRead: number
+  /** yyyy-MM-dd HH:mm:ss */
+  createdAt: string
 }
 
 // ============== 后台管理（仅管理端使用，鸿蒙端做预留）==============

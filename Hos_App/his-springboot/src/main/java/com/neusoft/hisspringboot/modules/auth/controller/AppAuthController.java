@@ -4,7 +4,11 @@ import com.neusoft.hisspringboot.common.ApiResponse;
 import com.neusoft.hisspringboot.modules.auth.dto.AppLoginRequest;
 import com.neusoft.hisspringboot.modules.auth.dto.AppRegisterRequest;
 import com.neusoft.hisspringboot.modules.auth.dto.LoginResponse;
+import com.neusoft.hisspringboot.modules.auth.dto.SmsLoginRequest;
+import com.neusoft.hisspringboot.modules.auth.dto.SmsResetPasswordRequest;
+import com.neusoft.hisspringboot.modules.auth.dto.SmsSendRequest;
 import com.neusoft.hisspringboot.modules.auth.service.AuthService;
+import com.neusoft.hisspringboot.modules.auth.service.SmsCodeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,6 +31,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class AppAuthController {
 
     private final AuthService authService;
+    private final SmsCodeService smsCodeService;
 
     /**
      * 患者注册：手机号 + 密码 + 昵称，注册成功直接返回登录 Token。
@@ -48,6 +53,45 @@ public class AppAuthController {
             @Valid @RequestBody AppLoginRequest request
     ) {
         return ApiResponse.success(authService.appLogin(request));
+    }
+
+    /**
+     * 发送短信验证码（本地模拟）：验证码打印在后端控制台日志中。
+     * scene=LOGIN 用于短信登录；scene=RESET_PASSWORD 用于找回密码。
+     */
+    @Operation(summary = "发送短信验证码",
+            description = "本地模拟短信：验证码打印在后端控制台日志。60 秒内同号码同用途只能发一次，每天每号码每用途最多 10 条")
+    @PostMapping("/sms/send")
+    public ApiResponse<Void> sendSmsCode(
+            @Valid @RequestBody SmsSendRequest request
+    ) {
+        smsCodeService.sendCode(request.phone(), request.scene());
+        return ApiResponse.success();
+    }
+
+    /**
+     * 短信验证码登录：校验验证码后登录；手机号未注册时自动创建患者账号。
+     */
+    @Operation(summary = "短信验证码登录",
+            description = "校验短信验证码登录；手机号未注册时自动创建 PATIENT 账号（默认昵称“用户+手机号后4位”，初始密码需通过找回密码设置）")
+    @PostMapping("/sms/login")
+    public ApiResponse<LoginResponse> smsLogin(
+            @Valid @RequestBody SmsLoginRequest request
+    ) {
+        return ApiResponse.success(authService.smsLogin(request));
+    }
+
+    /**
+     * 短信验证码找回密码：校验验证码后为已注册患者账号设置新密码。
+     */
+    @Operation(summary = "短信验证码找回密码",
+            description = "校验短信验证码（scene=RESET_PASSWORD）后重置该患者账号的登录密码")
+    @PostMapping("/sms/reset-password")
+    public ApiResponse<Void> smsResetPassword(
+            @Valid @RequestBody SmsResetPasswordRequest request
+    ) {
+        authService.smsResetPassword(request);
+        return ApiResponse.success();
     }
 
     /**

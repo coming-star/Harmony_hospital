@@ -15,6 +15,7 @@ import com.neusoft.hisspringboot.modules.doctor.entity.Doctor;
 import com.neusoft.hisspringboot.modules.doctor.mapper.DoctorMapper;
 import com.neusoft.hisspringboot.modules.level.entity.RegistrationLevel;
 import com.neusoft.hisspringboot.modules.level.mapper.RegistrationLevelMapper;
+import com.neusoft.hisspringboot.modules.notification.service.NotificationService;
 import com.neusoft.hisspringboot.modules.order.dto.CreateOrderRequest;
 import com.neusoft.hisspringboot.modules.order.dto.DailyCount;
 import com.neusoft.hisspringboot.modules.order.dto.DepartmentCount;
@@ -23,6 +24,8 @@ import com.neusoft.hisspringboot.modules.order.entity.PaymentRecord;
 import com.neusoft.hisspringboot.modules.order.entity.RegistrationOrder;
 import com.neusoft.hisspringboot.modules.order.mapper.PaymentRecordMapper;
 import com.neusoft.hisspringboot.modules.order.mapper.RegistrationOrderMapper;
+import com.neusoft.hisspringboot.modules.order.mq.OrderEventMessage;
+import com.neusoft.hisspringboot.modules.order.mq.OrderMqProducer;
 import com.neusoft.hisspringboot.modules.schedule.entity.ScheduleSlot;
 import com.neusoft.hisspringboot.modules.schedule.mapper.ScheduleSlotMapper;
 import com.neusoft.hisspringboot.modules.user.entity.SysUser;
@@ -46,8 +49,9 @@ import java.util.stream.Collectors;
 
 /**
  * 挂号订单核心流程；状态机与并发扣号约定见 docs/06-挂号流程与状态机.md。
- * 15 分钟超时取消暂由 {@link com.neusoft.hisspringboot.modules.order.task.OrderTimeoutTask} 定时扫描实现，
- * 待 RocketMQ 接入后替换为延迟消息消费者，取消逻辑本身不受影响。
+ * 15 分钟超时取消由 RocketMQ 延迟消息驱动（见 {@link com.neusoft.hisspringboot.modules.order.mq.OrderTimeoutConsumer}），
+ * 定时扫描 {@link com.neusoft.hisspringboot.modules.order.task.OrderTimeoutTask} 降为 5 分钟兜底；
+ * 取消逻辑本身不受影响。订单关键状态节点会发布事件（order_event_topic）供消息中心生成站内信。
  */
 @Service
 @RequiredArgsConstructor
@@ -85,6 +89,8 @@ public class OrderService {
     private final RegistrationLevelMapper registrationLevelMapper;
     private final SysUserMapper sysUserMapper;
     private final RedisCacheUtil redisCacheUtil;
+    private final OrderMqProducer orderMqProducer;
+    private final NotificationService notificationService;
 
     @Transactional
     public OrderDetail createOrder(Long userId, CreateOrderRequest request) {
@@ -186,6 +192,11 @@ public class OrderService {
         paymentRecord.setStatus("INIT");
         paymentRecordMapper.insert(paymentRecord);
 
+        // 下单成功 → 发 15 分钟超时延迟消息（RocketMQ；发送失败只打日志，由定时兜底任务取消）
+        orderMqProducer.sendTimeoutDelayMessage(order.getId(), order.getExpiredAt());
+        // 下单成功 → 发 5 分钟支付提醒延迟消息（到期未支付则提醒用户尽快支付；发送失败由定时兜底任务提醒）
+        orderMqProducer.sendPaymentReminderDelayMessage(order.getId());
+
         return toDetail(order);
     }
 
@@ -218,6 +229,9 @@ public class OrderService {
                         .set(PaymentRecord::getTradeNo, "MOCK" + orderId)
                         .eq(PaymentRecord::getOrderId, orderId)
         );
+
+        // 支付成功（预约成功）→ 发布订单事件，消息中心给用户发站内信（MQ 失败时直写兜底）
+        publishEventWithFallback(buildEvent(OrderEventMessage.EVENT_PAY_SUCCESS, current));
 
         return toDetail(current);
     }
@@ -375,6 +389,8 @@ public class OrderService {
                             .setSql("remaining_quota = remaining_quota + 1, version = version + 1")
                             .eq(ScheduleSlot::getId, current.getSlotId())
             );
+            // 取消成功（患者/管理员/超时）→ 发布订单事件，消息中心给用户发站内信（MQ 失败时直写兜底）
+            publishEventWithFallback(buildEvent(eventTypeByCancelSource(cancelSource), current));
             return toDetail(current);
         }
 
@@ -383,6 +399,38 @@ public class OrderService {
         }
 
         throw new BusinessException(ErrorCode.ORDER_STATUS_CONFLICT);
+    }
+
+    /** 发布订单事件：MQ 可用走 MQ（由消费者落站内信）；发送失败则同步直写站内信兜底，dedup_key 幂等不重复 */
+    private void publishEventWithFallback(OrderEventMessage event) {
+        if (!orderMqProducer.publishOrderEvent(event)) {
+            notificationService.handleOrderEvent(event);
+        }
+    }
+
+    /** 用订单快照构建订单状态事件（消息中心只依赖事件本身，不回查订单表） */
+    private OrderEventMessage buildEvent(String eventType, RegistrationOrder order) {
+        return new OrderEventMessage(
+                eventType,
+                order.getId(),
+                order.getOrderNo(),
+                order.getUserId(),
+                order.getDoctorNameSnapshot(),
+                order.getDepartmentNameSnapshot(),
+                order.getLevelNameSnapshot(),
+                order.getVisitDate(),
+                order.getStartTime(),
+                order.getAmountFen(),
+                LocalDateTime.now()
+        );
+    }
+
+    private String eventTypeByCancelSource(String cancelSource) {
+        return switch (cancelSource) {
+            case CANCEL_SOURCE_USER -> OrderEventMessage.EVENT_CANCEL_USER;
+            case CANCEL_SOURCE_ADMIN -> OrderEventMessage.EVENT_CANCEL_ADMIN;
+            default -> OrderEventMessage.EVENT_CANCEL_TIMEOUT;
+        };
     }
 
     private RegistrationOrder getOwnedOrder(Long userId, Long orderId) {

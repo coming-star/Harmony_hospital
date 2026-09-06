@@ -1,7 +1,8 @@
 import { get, post, put } from '../utils/request'
 import type {
   AppLoginRequest, AppRegisterRequest, AdminLoginRequest,
-  LoginResponse, MeResponse, UpdateMeRequest
+  LoginResponse, MeResponse, UpdateMeRequest,
+  SmsSendRequest, SmsLoginRequest, SmsResetPasswordRequest
 } from '../types'
 
 /** 患者注册 → 成功直接返回登录态 */
@@ -11,6 +12,18 @@ export function register(body: AppRegisterRequest): Promise<LoginResponse> {
 /** 患者登录 */
 export function login(body: AppLoginRequest): Promise<LoginResponse> {
   return post<LoginResponse>('/api/app/auth/login', body)
+}
+/** 发送短信验证码（本地模拟：验证码打印在后端控制台日志） */
+export function sendSmsCode(body: SmsSendRequest): Promise<void> {
+  return post<void>('/api/app/auth/sms/send', body)
+}
+/** 短信验证码登录（未注册自动注册） */
+export function smsLogin(body: SmsLoginRequest): Promise<LoginResponse> {
+  return post<LoginResponse>('/api/app/auth/sms/login', body)
+}
+/** 短信验证码找回密码 */
+export function resetPasswordBySms(body: SmsResetPasswordRequest): Promise<void> {
+  return post<void>('/api/app/auth/sms/reset-password', body)
 }
 /** 患者登出（把 token 加入 Redis 黑名单）*/
 export function logoutPatient(): Promise<void> {

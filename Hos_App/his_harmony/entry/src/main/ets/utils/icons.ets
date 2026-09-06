@@ -21,5 +21,9 @@ export class AppIcon {
   static readonly edit: string = 'sys.symbol.pencil'
   static readonly message: string = 'sys.symbol.message'
   static readonly camera: string = 'sys.symbol.camera'
+  static readonly bell: string = 'sys.symbol.bell'
+  static readonly clock: string = 'sys.symbol.clock'
+  static readonly cancel: string = 'sys.symbol.xmark_circle_fill'
+  static readonly history: string = 'sys.symbol.timer'
 
 }

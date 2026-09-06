@@ -16,6 +16,7 @@ import { Route } from '../utils/theme'
 import { showToast } from '../utils/toast'
 import * as uploadApi from '../api/upload'
 import * as authApi from '../api/auth'
+import * as messageApi from '../api/message'
 import type { MeResponse, UpdateMeRequest } from '../types'
 
 interface EntryRow {
@@ -40,6 +41,8 @@ export struct MineTab {
   @State nickEditShow: boolean = false
   @State nickInput: string = ''
   @State uploading: boolean = false
+  /** 站内信未读数（消息入口角标；Index 的 Tab 红点同源 AppStorage） */
+  @StorageProp('unreadMsgCount') unreadMsgCount: number = 0
   private readonly entries: EntryRow[] = [
     { key:'orders',   icon: AppIcon.message, title:'挂号记录',     sub:'查看历史挂号',           route: Route.ORDER_RECORD },
     { key:'contacts', icon: AppIcon.profileOutline, title:'就诊人管理',   sub:'管理绑定就诊人',           route: Route.CONTACT_MGNT },
@@ -59,6 +62,8 @@ export struct MineTab {
     this.nickname = userStore.nickname
     this.phone = userStore.phone
     this.avatarUrl = userStore.avatarUrl
+    // 进入"我的"页顺带刷新未读数角标
+    messageApi.refreshUnreadBadge()
   }
 
   /** 选择图片 → 上传头像 → 更新资料 */
@@ -179,6 +184,43 @@ export struct MineTab {
     .onClick(() => this.click(r))
   }
 
+  /** 消息中心入口卡：样式与 EntryCard 一致，右侧带未读数角标 */
+  @Builder MessageEntryCard() {
+    Row() {
+      Stack() {
+        Column().width(48).height(48).borderRadius(10).backgroundColor($r('app.color.primary_light'))
+        SymbolGlyph($r(AppIcon.bell))
+          .fontSize(30)
+      }.margin({ right: 14 })
+
+      Column() {
+        Text('消息中心').fontSize(22).fontWeight(600).fontColor($r('app.color.text_primary'))
+        Text('预约通知 · 就诊提醒').fontSize(18).fontColor($r('app.color.text_secondary')).margin({ top: 6 })
+      }.layoutWeight(1).alignItems(HorizontalAlign.Start)
+
+      if (this.unreadMsgCount > 0) {
+        Text(this.unreadMsgCount > 99 ? '99+' : String(this.unreadMsgCount))
+          .fontSize(16).fontColor($r('app.color.text_white'))
+          .backgroundColor($r('app.color.danger'))
+          .borderRadius($r('app.float.radius_pill'))
+          .padding({ left: 8, right: 8, top: 2, bottom: 2 })
+          .margin({ right: 8 })
+      }
+      SymbolGlyph($r(AppIcon.forward))
+        .fontSize(30)
+    }
+    .width('92%').padding(20).alignSelf(ItemAlign.Center)
+    .backgroundColor($r('app.color.bg_card')).borderRadius(16)
+    .margin({ top: 12 })
+    .onClick(() => {
+      if (!userStore.isLoggedIn()) {
+        try { router.pushUrl({ url: Route.LOGIN }) } catch (_) {}
+        return
+      }
+      try { router.pushUrl({ url: Route.MESSAGE_LIST }) } catch (_) {}
+    })
+  }
+
   @Builder InfoGroup() {
     Column() {
       Text('系统信息').fontSize(20).fontColor($r('app.color.text_hint'))
@@ -204,12 +246,16 @@ export struct MineTab {
   }
 
   @Builder logoutDialog() {
-    ConfirmDialog({
-      message: '确定要退出登录吗？',
-      danger: true,
-      onConfirm: () => { this.logoutShow = false; userStore.logout() },
-      onCancel: () => { this.logoutShow = false }
-    })
+    // 包一层撑满 sheet 的居中容器，修复弹窗内容偏上
+    Column() {
+      ConfirmDialog({
+        message: '确定要退出登录吗？',
+        danger: true,
+        onConfirm: () => { this.logoutShow = false; userStore.logout() },
+        onCancel: () => { this.logoutShow = false }
+      })
+    }
+    .width('100%').height('100%').justifyContent(FlexAlign.Center)
   }
 
   @Builder nickEditMask() {
@@ -249,6 +295,9 @@ export struct MineTab {
       Column() {
         this.BlueTopHeader()
 
+        // 消息中心入口（未读角标）
+        this.MessageEntryCard()
+
         // 3 张入口卡
         ForEach(this.entries, (it: EntryRow) => {
           this.EntryCard(it)
@@ -256,15 +305,19 @@ export struct MineTab {
 
         this.InfoGroup()
 
-        // 退出登录（红色大圆角按钮，白边红字，参考图同款）
-        Button('退出登录', { type: ButtonType.Normal })
-          .width('90%').height(60)
-          .margin({ top: 36, bottom: 30 })
-          .backgroundColor($r('app.color.danger_light'))
-          .fontColor($r('app.color.danger'))
-          .fontSize(22).fontWeight(600)
-          .borderRadius($r('app.float.radius_lg'))
-          .onClick(() => { this.logoutShow = true })
+        // 退出登录（与设置页"账号"分组同款：浅色卡片行，红字居左，右侧 › 箭头）
+        Row() {
+          Text('退出登录')
+            .fontSize(23)
+            .fontColor($r('app.color.danger'))
+            .layoutWeight(1)
+          Text('›').fontSize(30).fontColor($r('app.color.text_hint'))
+        }
+        .width('92%').height(64).padding({ left: 20, right: 20 })
+        .alignSelf(ItemAlign.Center)
+        .backgroundColor($r('app.color.bg_card')).borderRadius(16)
+        .margin({ top: 36, bottom: 30 })
+        .onClick(() => { this.logoutShow = true })
       }
       .width('100%').height('100%')
       .backgroundColor($r('app.color.bg_page'))
@@ -274,6 +327,6 @@ export struct MineTab {
       }
     }
     .width('100%').height('100%')
-    .bindSheet($$this.logoutShow, this.logoutDialog(), { height: 300, preferType: SheetType.CENTER, showClose: false, dragBar: true, backgroundColor: Color.White })
+    .bindSheet($$this.logoutShow, this.logoutDialog(), { height: 300, preferType: SheetType.CENTER, showClose: false, dragBar: true, backgroundColor: $r('app.color.sheet_bg') })
   }
 }
