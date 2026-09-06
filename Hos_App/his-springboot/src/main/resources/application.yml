@@ -16,7 +16,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/neusoft_cloud_hospital?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
     username: root
-    password: 123456
+    password: 20050319Lz@!
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jackson:
@@ -30,7 +30,7 @@ spring:
       host: localhost
       port: 6379
       database: 0
-      password: "123456"
+      password: "20050319Lz@!"
       timeout: 5s
       lettuce:
         pool:
@@ -40,7 +40,7 @@ spring:
           max-wait: -1ms
 
   cache:
-    type: redis
+    type: simple
 
 mybatis-plus:
   configuration:
@@ -62,14 +62,11 @@ app:
     expire-hours: 24
   ai:
     deepseek:
-      # DeepSeek API Key：优先读环境变量 DEEPSEEK_API_KEY；不设置时接口会提示未配置。
-      api-key: ${DEEPSEEK_API_KEY:}
+      api-key: sk-3260d1c9e9b8459eaa07744d82eb9328
       base-url: https://api.deepseek.com
       model: deepseek-chat
   security:
-    # 身份证 AES-GCM 加密密钥（32 字节 hex = 256 位）。生产环境务必用环境变量 ID_CARD_AES_KEY 覆盖。
     id-card-aes-key: ${ID_CARD_AES_KEY:0123456789abcdef0123456789abcdef}
   upload:
-    # 头像上传本地存储目录与访问 URL 前缀
     avatar-dir: ${UPLOAD_AVATAR_DIR:./uploads/avatars}
     avatar-url-prefix: ${UPLOAD_AVATAR_URL_PREFIX:http://localhost:8081/static/avatars}

@@ -5,17 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.cache.RedisCacheConfiguration;
-import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
-import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
-
-import java.time.Duration;
 
 @Configuration
 @EnableCaching
@@ -38,20 +34,13 @@ public class RedisConfig {
         return template;
     }
 
+    /**
+     * 使用内存缓存（ConcurrentMap），避免 Redis 连接故障导致 @Cacheable 接口全部 500。
+     * 如需切换回 Redis 缓存，把返回类型改成 RedisCacheManager 即可。
+     */
     @Bean
-    public CacheManager cacheManager(RedisConnectionFactory factory) {
-        GenericJackson2JsonRedisSerializer jsonSerializer = jsonSerializer();
-
-        RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofMinutes(5))
-                .computePrefixWith(name -> "his:cache:" + name + ":")
-                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jsonSerializer))
-                .disableCachingNullValues();
-
-        return RedisCacheManager.builder(factory)
-                .cacheDefaults(config)
-                .build();
+    public CacheManager cacheManager() {
+        return new ConcurrentMapCacheManager();
     }
 
     private GenericJackson2JsonRedisSerializer jsonSerializer() {
