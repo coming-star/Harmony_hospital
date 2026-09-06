@@ -30,6 +30,7 @@ struct ContactSelect {
   @State addSheet: boolean = false
   @State addName: string = ''
   @State addPhone: string = ''
+  @State addIdCard: string = ''
   @State addRelation: Relation = RelationValue.SELF
 
   async aboutToAppear(): Promise<void> {
@@ -64,11 +65,16 @@ struct ContactSelect {
   private async submitAdd(): Promise<void> {
     if (!this.addName.trim()) { showToast('请输入姓名'); return }
     if (!/^1\d{10}$/.test(this.addPhone)) { showToast('手机号格式错误'); return }
+    const idCard: string = this.addIdCard.trim()
+    if (idCard.length > 0 && !/^\d{17}[\dXx]$/.test(idCard)) {
+      showToast('身份证号格式错误（应为 18 位）'); return
+    }
     const body: ContactRequest = { name: this.addName, phone: this.addPhone, relation: this.addRelation }
+    if (idCard.length > 0) { body.idCard = idCard }
     try {
       const r = await contactApi.createContact(body)
       this.addSheet = false
-      this.addName = ''; this.addPhone = ''
+      this.addName = ''; this.addPhone = ''; this.addIdCard = ''
       await this.load()
       this.selectedId = r.contactId
     } catch (_) {}
@@ -81,6 +87,8 @@ struct ContactSelect {
         .onChange(v => this.addName = v)
       TextInput({ placeholder: '手机号' }).width('86%').height(56).fontSize(30).margin({bottom:12})
         .type(InputType.PhoneNumber).onChange(v => this.addPhone = v)
+      TextInput({ placeholder: '身份证号（选填）' }).width('86%').height(56).fontSize(30).margin({bottom:12})
+        .onChange(v => this.addIdCard = v).maxLength(18)
       // 关系单选（简化 5 个 Chip）
       Flex({ wrap: FlexWrap.Wrap }) {
         ForEach(RelationList, (r: RelationOption) => {
@@ -123,6 +131,9 @@ struct ContactSelect {
                     .borderRadius(999)
                 }
                 Text(c.phone).fontSize(24).fontColor($r('app.color.text_hint')).margin({top:8})
+                if (c.idCardMasked && c.idCardMasked.length > 0) {
+                  Text(`身份证 ${c.idCardMasked}`).fontSize(22).fontColor($r('app.color.text_hint')).margin({top:4})
+                }
               }.margin({ left: 18 }).layoutWeight(1).alignItems(HorizontalAlign.Start)
             }
             .width('100%').padding(20)
@@ -144,6 +155,6 @@ struct ContactSelect {
     }
     .width('100%').height('100%').backgroundColor($r('app.color.bg_page'))
     .bindSheet($$this.addSheet, this.AddContactSheet(),
-      { height: 520, showClose: true, dragBar: true })
+      { height: 580, showClose: true, dragBar: true })
   }
 }

@@ -20,5 +20,6 @@ export class AppIcon {
   static readonly delete: string = 'sys.symbol.trash'
   static readonly edit: string = 'sys.symbol.pencil'
   static readonly message: string = 'sys.symbol.message'
+  static readonly camera: string = 'sys.symbol.camera'
 
 }

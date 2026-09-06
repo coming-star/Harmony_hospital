@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Pattern;
 /**
  * 患者端新增/修改就诊人请求。
  * relation 为空时后端默认按 SELF（本人）处理。
+ * idCard 可选；传则必须为 18 位身份证号，后端 AES-GCM 加密存储并做同账号判重。
  */
 @Schema(description = "新增/修改就诊人请求")
 public record ContactRequest(
@@ -24,6 +25,11 @@ public record ContactRequest(
                 example = "PARENT", allowableValues = {"SELF", "PARENT", "CHILD", "SPOUSE", "OTHER"})
         @Pattern(regexp = "SELF|PARENT|CHILD|SPOUSE|OTHER",
                 message = "关系只能是 SELF/PARENT/CHILD/SPOUSE/OTHER")
-        String relation
+        String relation,
+
+        @Schema(description = "身份证号（18 位，末位可为 X），可选；后端加密存储且同账号下不允许重复",
+                example = "110101199001011234")
+        @Pattern(regexp = "^$|^\\d{17}[\\dXx]$", message = "身份证号格式不正确（应为 18 位）")
+        String idCard
 ) {
 }

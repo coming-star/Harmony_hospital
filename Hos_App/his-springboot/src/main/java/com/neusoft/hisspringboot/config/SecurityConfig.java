@@ -71,7 +71,8 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/api/admin/auth/login",
                                 "/api/app/auth/register",
-                                "/api/app/auth/login"
+                                "/api/app/auth/login",
+                                "/static/avatars/**"
                         ).permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/app/**").hasRole("PATIENT")

@@ -1,7 +1,7 @@
-import { get, post } from '../utils/request'
+import { get, post, put } from '../utils/request'
 import type {
   AppLoginRequest, AppRegisterRequest, AdminLoginRequest,
-  LoginResponse, LoginUser
+  LoginResponse, MeResponse, UpdateMeRequest
 } from '../types'
 
 /** 患者注册 → 成功直接返回登录态 */
@@ -24,7 +24,11 @@ export function adminLogin(body: AdminLoginRequest): Promise<LoginResponse> {
 export function adminLogout(): Promise<void> {
   return post<void>('/api/admin/auth/logout')
 }
-/** 当前登录用户信息（患者+管理员通用）*/
-export function getMe(): Promise<LoginUser> {
-  return get<LoginUser>('/api/me')
+/** 当前登录用户完整信息（含昵称、头像、手机号）*/
+export function getMe(): Promise<MeResponse> {
+  return get<MeResponse>('/api/me')
+}
+/** 修改当前登录用户资料（昵称、头像），返回更新后的完整信息 */
+export function updateMe(body: UpdateMeRequest): Promise<MeResponse> {
+  return put<MeResponse>('/api/me', body)
 }

@@ -6,12 +6,17 @@
  * 4. 红色"退出登录"按钮（弹 ConfirmDialog 二次确认）
  */
 import router from '@ohos.router'
+import { photoAccessHelper } from '@kit.MediaLibraryKit'
 import userStore from '../store/UserStore'
 import { AvatarIcon } from '../components/AvatarIcon'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { AppIcon } from '../utils/icons'
 import { Format } from '../utils/format'
 import { Route } from '../utils/theme'
+import { showToast } from '../utils/toast'
+import * as uploadApi from '../api/upload'
+import * as authApi from '../api/auth'
+import type { MeResponse, UpdateMeRequest } from '../types'
 
 interface EntryRow {
   key: string
@@ -31,6 +36,10 @@ export struct MineTab {
   @State logoutShow: boolean = false
   @State nickname: string = ''
   @State phone: string = ''
+  @State avatarUrl: string = ''
+  @State nickEditShow: boolean = false
+  @State nickInput: string = ''
+  @State uploading: boolean = false
   private readonly entries: EntryRow[] = [
     { key:'orders',   icon: AppIcon.message, title:'挂号记录',     sub:'查看历史挂号',           route: Route.ORDER_RECORD },
     { key:'contacts', icon: AppIcon.profileOutline, title:'就诊人管理',   sub:'管理绑定就诊人',           route: Route.CONTACT_MGNT },
@@ -49,6 +58,50 @@ export struct MineTab {
   aboutToAppear(): void {
     this.nickname = userStore.nickname
     this.phone = userStore.phone
+    this.avatarUrl = userStore.avatarUrl
+  }
+
+  /** 选择图片 → 上传头像 → 更新资料 */
+  async pickAvatar(): Promise<void> {
+    if (this.uploading) return
+    try {
+      const options: photoAccessHelper.PhotoSelectOptions = new photoAccessHelper.PhotoSelectOptions()
+      options.MIMEType = photoAccessHelper.PhotoViewMIMETypes.IMAGE_TYPE
+      options.maxSelectNumber = 1
+      const picker: photoAccessHelper.PhotoViewPicker = new photoAccessHelper.PhotoViewPicker()
+      const result: photoAccessHelper.PhotoSelectResult = await picker.select(options)
+      if (result.photoUris && result.photoUris.length > 0) {
+        this.uploading = true
+        const up = await uploadApi.uploadAvatar(result.photoUris[0])
+        const me = await authApi.updateMe({ avatarUrl: up.url })
+        await userStore.updateMe(me)
+        this.avatarUrl = userStore.avatarUrl
+        showToast('头像更新成功')
+      }
+    } catch (_) {
+      // 用户取消选择不提示
+    } finally {
+      this.uploading = false
+    }
+  }
+
+  openNickEdit(): void {
+    this.nickInput = this.nickname
+    this.nickEditShow = true
+  }
+
+  async saveNick(): Promise<void> {
+    const nick: string = this.nickInput.trim()
+    if (!nick) { showToast('昵称不能为空'); return }
+    if (nick.length > 20) { showToast('昵称最长 20 字符'); return }
+    try {
+      const body: UpdateMeRequest = { nickname: nick }
+      const me: MeResponse = await authApi.updateMe(body)
+      await userStore.updateMe(me)
+      this.nickname = userStore.nickname
+      this.nickEditShow = false
+      showToast('昵称修改成功')
+    } catch (_) {}
   }
 
   @Builder BlueTopHeader() {
@@ -58,10 +111,35 @@ export struct MineTab {
         .backgroundColor($r('app.color.primary'))
 
       Row() {
-        AvatarIcon({ name: this.nickname || '健康用户', iconSize: 72, bg: $r('app.color.primary_light') })
+        // 头像：已登录可点击上传
+        Stack({ alignContent: Alignment.BottomEnd }) {
+          AvatarIcon({ name: this.nickname || '健康用户', url: this.avatarUrl, iconSize: 72, bg: $r('app.color.primary_light') })
+          if (userStore.isLoggedIn()) {
+            Circle()
+              .width(26).height(26)
+              .fill($r('app.color.text_white'))
+              .margin({ right: -2, bottom: -2 })
+            SymbolGlyph($r(AppIcon.camera))
+              .fontSize(18)
+              .fontColor([$r('app.color.primary')])
+              .margin({ right: 0, bottom: 2 })
+          }
+        }
+        .onClick(() => { if (userStore.isLoggedIn()) this.pickAvatar() })
+
         Column() {
-          Text(this.nickname ? this.nickname : '健康用户')
-            .fontSize(28).fontWeight(800).fontColor($r('app.color.text_white'))
+          if (userStore.isLoggedIn()) {
+            Row() {
+              Text(this.nickname ? this.nickname : '健康用户')
+                .fontSize(28).fontWeight(800).fontColor($r('app.color.text_white'))
+              SymbolGlyph($r(AppIcon.edit))
+                .fontSize(22).fontColor(['#CCFFFFFF']).margin({ left: 8 })
+            }
+            .onClick(() => this.openNickEdit())
+          } else {
+            Text('健康用户')
+              .fontSize(28).fontWeight(800).fontColor($r('app.color.text_white'))
+          }
           if (userStore.isLoggedIn()) {
             Text(this.phone ? `手机号 ${Format.maskPhone(this.phone)}` : '')
               .fontSize(20).fontColor('#CCFFFFFF').margin({top:6})
@@ -134,29 +212,68 @@ export struct MineTab {
     })
   }
 
-  build() {
+  @Builder nickEditMask() {
     Column() {
-      this.BlueTopHeader()
-
-      // 3 张入口卡
-      ForEach(this.entries, (it: EntryRow) => {
-        this.EntryCard(it)
-      }, (it: EntryRow) => it.key)
-
-      this.InfoGroup()
-
-      // 退出登录（红色大圆角按钮，白边红字，参考图同款）
-      Button('退出登录', { type: ButtonType.Normal })
-        .width('90%').height(60)
-        .margin({ top: 36, bottom: 30 })
-        .backgroundColor($r('app.color.danger_light'))
-        .fontColor($r('app.color.danger'))
-        .fontSize(22).fontWeight(600)
-        .borderRadius($r('app.float.radius_lg'))
-        .onClick(() => { this.logoutShow = true })
+      Column() {
+        Text('修改昵称').fontSize(22).fontWeight(700).margin({ top: 20, bottom: 16 })
+        TextInput({ placeholder: '请输入昵称（1-20 字符）', text: this.nickInput })
+          .width('80%').height(56)
+          .backgroundColor($r('app.color.bg_page')).borderRadius(12)
+          .maxLength(20)
+          .onChange((v: string) => { this.nickInput = v })
+        Row() {
+          Button('取消')
+            .width('38%').height(50).fontSize(20)
+            .backgroundColor($r('app.color.bg_page')).fontColor($r('app.color.text_primary'))
+            .borderRadius(12)
+            .onClick(() => { this.nickEditShow = false })
+          Button('保存')
+            .width('38%').height(50).fontSize(20)
+            .backgroundColor($r('app.color.primary')).fontColor(Color.White)
+            .borderRadius(12).margin({ left: 16 })
+            .onClick(() => this.saveNick())
+        }.width('80%').margin({ top: 20, bottom: 20 })
+      }
+      .width('80%')
+      .backgroundColor(Color.White).borderRadius(16)
+      .alignItems(HorizontalAlign.Center)
     }
     .width('100%').height('100%')
-    .backgroundColor($r('app.color.bg_page'))
+    .backgroundColor('#66000000')
+    .justifyContent(FlexAlign.Center)
+    .onClick(() => { this.nickEditShow = false })
+  }
+
+  build() {
+    Stack() {
+      Column() {
+        this.BlueTopHeader()
+
+        // 3 张入口卡
+        ForEach(this.entries, (it: EntryRow) => {
+          this.EntryCard(it)
+        }, (it: EntryRow) => it.key)
+
+        this.InfoGroup()
+
+        // 退出登录（红色大圆角按钮，白边红字，参考图同款）
+        Button('退出登录', { type: ButtonType.Normal })
+          .width('90%').height(60)
+          .margin({ top: 36, bottom: 30 })
+          .backgroundColor($r('app.color.danger_light'))
+          .fontColor($r('app.color.danger'))
+          .fontSize(22).fontWeight(600)
+          .borderRadius($r('app.float.radius_lg'))
+          .onClick(() => { this.logoutShow = true })
+      }
+      .width('100%').height('100%')
+      .backgroundColor($r('app.color.bg_page'))
+
+      if (this.nickEditShow) {
+        this.nickEditMask()
+      }
+    }
+    .width('100%').height('100%')
     .bindSheet($$this.logoutShow, this.logoutDialog(), { height: 300, preferType: SheetType.CENTER, showClose: false, dragBar: true, backgroundColor: Color.White })
   }
 }

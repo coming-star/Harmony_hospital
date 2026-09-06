@@ -23,6 +23,7 @@ struct ContactManage {
   @State editId: string = ''
   @State fName: string = ''
   @State fPhone: string = ''
+  @State fIdCard: string = ''
   @State fRelation: Relation = RelationValue.SELF
   @State deleteShow: boolean = false
   @State deleteTarget: PatientContact | undefined = undefined
@@ -38,18 +39,25 @@ struct ContactManage {
 
   openAdd(): void {
     this.editId = ''
-    this.fName = ''; this.fPhone = ''; this.fRelation = RelationValue.SELF
+    this.fName = ''; this.fPhone = ''; this.fIdCard = ''; this.fRelation = RelationValue.SELF
     this.addSheet = true
   }
   openEdit(c: PatientContact): void {
     this.editId = c.id
-    this.fName = c.name; this.fPhone = c.phone; this.fRelation = c.relation
+    // 编辑时身份证字段留空（后端不回显明文）；留空即保留原值，重新输入则覆盖
+    this.fName = c.name; this.fPhone = c.phone; this.fIdCard = ''; this.fRelation = c.relation
     this.addSheet = true
   }
   async submitForm(): Promise<void> {
     if (!this.fName.trim()) { showToast('请输入姓名'); return }
     if (!/^1\d{10}$/.test(this.fPhone)) { showToast('手机号格式错误'); return }
+    const idCard: string = this.fIdCard.trim()
+    if (idCard.length > 0 && !/^\d{17}[\dXx]$/.test(idCard)) {
+      showToast('身份证号格式错误（应为 18 位）'); return
+    }
     const body: ContactRequest = { name: this.fName.trim(), phone: this.fPhone, relation: this.fRelation }
+    // 非空才传：新增时空=不采集；编辑时空=保留原值
+    if (idCard.length > 0) { body.idCard = idCard }
     try {
       if (this.editId) await contactApi.updateContact(this.editId, body)
       else           await contactApi.createContact(body)
@@ -110,6 +118,9 @@ struct ContactManage {
                           .fontColor($r('app.color.primary')).borderRadius(999)
                       }
                       Text(c.phone).fontSize(24).fontColor($r('app.color.text_hint')).margin({top:8})
+                      if (c.idCardMasked && c.idCardMasked.length > 0) {
+                        Text(`身份证 ${c.idCardMasked}`).fontSize(22).fontColor($r('app.color.text_hint')).margin({top:4})
+                      }
                     }.alignItems(HorizontalAlign.Start).layoutWeight(1).margin({left:16})
                     SymbolGlyph($r(AppIcon.edit)).fontSize(30).padding(12)
                       .onClick(() => this.openEdit(c))
@@ -146,7 +157,7 @@ struct ContactManage {
     }
     .width('100%').height('100%')
     // 页面根节点只挂这一个 bindSheet —— 与 ContactSelect 页「新增就诊人」弹窗完全相同的写法
-    .bindSheet($$this.addSheet, this.FormSheet(), { height: 560, showClose: true, dragBar: true })
+    .bindSheet($$this.addSheet, this.FormSheet(), { height: 620, showClose: true, dragBar: true })
   }
 
   @Builder FormSheet() {
@@ -158,6 +169,10 @@ struct ContactManage {
       TextInput({ placeholder: '手机号', text: this.fPhone }).type(InputType.PhoneNumber)
         .width('86%').height(56).backgroundColor($r('app.color.bg_page'))
         .borderRadius(12).margin({bottom:12}).onChange(v => this.fPhone = v)
+      TextInput({ placeholder: this.editId ? '身份证号（留空则不修改）' : '身份证号（选填）', text: this.fIdCard })
+        .width('86%').height(56).backgroundColor($r('app.color.bg_page'))
+        .borderRadius(12).margin({bottom:12}).onChange(v => this.fIdCard = v)
+        .maxLength(18)
       Flex({wrap: FlexWrap.Wrap}) {
         ForEach(RelationList, (r: RelationOption) => {
           Text(r.label)

@@ -3,6 +3,8 @@
  * ArkTS 严格子集合规版：裸 catch、Map 传参、无索引签名/中括号访问/any/unknown/交叉类型。
  */
 import { http } from '@kit.NetworkKit'
+import { fileIo as fs } from '@kit.CoreFileKit'
+import { util } from '@kit.ArkTS'
 import router from '@ohos.router'
 import { UserStore } from '../store/UserStore'
 import { Route } from './theme'
@@ -173,4 +175,109 @@ export function put<T>(url: string, body?: Object, opts?: RequestOptions): Promi
 export function del<T>(url: string, query?: Map<string, string>, opts?: RequestOptions): Promise<T> {
   const q: Map<string, string> = query ?? new Map<string, string>()
   return doRequest<T>(http.RequestMethod.DELETE, url, q, undefined, opts ?? {})
+}
+
+/** 文件上传结果（后端统一返回 { url } 形式）*/
+export interface UploadResult {
+  url: string
+}
+
+/**
+ * 上传文件（multipart/form-data）。
+ * 与 doRequest 分开实现：需要读取本地文件并拼装二进制 multipart 报文，无法走 JSON 通道。
+ * @param url       接口路径（如 /api/upload/avatar）
+ * @param fileUri   本地文件 URI（PhotoViewPicker 返回的 file://...）
+ * @param fieldName 表单字段名（默认 file）
+ */
+export async function uploadFile(url: string, fileUri: string, fieldName: string, opts?: RequestOptions): Promise<UploadResult> {
+  const fullUrl: string = url.startsWith('http') ? url : `${BASE_URL}${url}`
+  showLoading(!!opts?.loading)
+
+  // 1. 读取文件为 ArrayBuffer
+  let fileBuffer: ArrayBuffer
+  let fileName: string = 'file'
+  try {
+    const stat: fs.Stat = fs.statSync(fileUri)
+    fileBuffer = new ArrayBuffer(stat.size)
+    const file: fs.File = fs.openSync(fileUri, fs.OpenMode.READ_ONLY)
+    try {
+      fs.readSync(file.fd, fileBuffer)
+    } finally {
+      fs.closeSync(file)
+    }
+    const slash: number = fileUri.lastIndexOf('/')
+    if (slash >= 0) {
+      fileName = decodeURIComponent(fileUri.substring(slash + 1))
+    }
+  } catch (_) {
+    toast('读取图片失败')
+    throw new Error('读取图片失败')
+  }
+
+  // 2. 推断 MIME 类型
+  const dot: number = fileName.lastIndexOf('.')
+  const ext: string = dot >= 0 ? fileName.substring(dot + 1).toLowerCase() : ''
+  const mimeType: string = ext === 'png' ? 'image/png'
+    : ext === 'webp' ? 'image/webp'
+    : ext === 'gif' ? 'image/gif'
+    : 'image/jpeg'
+
+  // 3. 手工拼装 multipart 报文（header + 文件二进制 + footer）
+  const boundary: string = '----HarmonyBoundary' + Math.random().toString(36).substring(2)
+  const headerStr: string =
+    `--${boundary}\r\nContent-Disposition: form-data; name="${fieldName}"; filename="${fileName}"\r\nContent-Type: ${mimeType}\r\n\r\n`
+  const footerStr: string = `\r\n--${boundary}--\r\n`
+  // ArkTS 无全局 TextEncoder，使用 @kit.ArkTS 的 util.TextEncoder 编码 UTF-8 字节（encode 直接返回 Uint8Array）
+  const encoder: util.TextEncoder = new util.TextEncoder()
+  const headerU8: Uint8Array = encoder.encode(headerStr)
+  const footerU8: Uint8Array = encoder.encode(footerStr)
+  const fileU8: Uint8Array = new Uint8Array(fileBuffer)
+  const bodyU8: Uint8Array = new Uint8Array(headerU8.length + fileU8.length + footerU8.length)
+  bodyU8.set(headerU8, 0)
+  bodyU8.set(fileU8, headerU8.length)
+  bodyU8.set(footerU8, headerU8.length + fileU8.length)
+
+  // 4. 构造请求头（Authorization 带 token；Content-Type 指定 boundary）
+  const token: string = UserStore.getToken()
+  const auth: string = token ? `Bearer ${token}` : ''
+  const headerJson: string =
+    `{"Accept":"application/json","Authorization":"${auth}","Content-Type":"multipart/form-data; boundary=${boundary}"}`
+
+  let resp: http.HttpResponse
+  try {
+    const httpRequest: http.HttpRequest = http.createHttp()
+    resp = await httpRequest.request(fullUrl, {
+      method: http.RequestMethod.POST,
+      header: JSON.parse(headerJson) as Object,
+      extraData: bodyU8.buffer,
+      connectTimeout: 30000,
+      readTimeout: 30000
+    })
+    httpRequest.destroy()
+  } catch (_) {
+    toast('网络异常，请检查网络后重试')
+    throw new Error('网络异常，请检查网络后重试')
+  }
+
+  if (resp.responseCode < 200 || resp.responseCode >= 300) {
+    handleHttpError(resp)
+    throw new Error(`HTTP ${resp.responseCode}`)
+  }
+
+  let payload: ApiResponse<UploadResult>
+  try {
+    payload = typeof resp.result === 'string'
+      ? JSON.parse(resp.result) as ApiResponse<UploadResult>
+      : (resp.result as ApiResponse<UploadResult>)
+  } catch (_) {
+    toast('响应格式错误')
+    throw new Error('响应格式错误')
+  }
+
+  if (payload.code !== 200) {
+    const msg: string = bizMsg(payload.code) || payload.message || '上传失败'
+    toast(msg)
+    throw new Error(msg)
+  }
+  return payload.data
 }

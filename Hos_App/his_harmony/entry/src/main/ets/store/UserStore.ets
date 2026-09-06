@@ -11,7 +11,7 @@ import { preferences } from '@kit.ArkData'
 import { promptAction } from '@kit.ArkUI'
 import router from '@ohos.router'
 import { Route } from '../utils/theme'
-import type { LoginResponse, UserType } from '../types'
+import type { LoginResponse, UserType, MeResponse } from '../types'
 import * as authApi from '../api/auth'
 
 const STORE_NAME = 'user_store'
@@ -20,6 +20,7 @@ const K_USER_ID = 'user_id'
 const K_NICK = 'nickname'
 const K_USER_TYPE = 'user_type'
 const K_PHONE = 'phone'
+const K_AVATAR = 'avatar_url'
 
 export class UserStore {
   private static _i: UserStore | null = null
@@ -34,6 +35,7 @@ export class UserStore {
   private _nickname: string = ''
   private _phone: string = ''
   private _userType: UserType | '' = ''
+  private _avatarUrl: string = ''
 
   /** 是否已完成异步初始化 */
   private inited: boolean = false
@@ -60,6 +62,7 @@ export class UserStore {
     this._nickname = String((await this.prefs.get(K_NICK, '')) ?? '')
     this._phone = String((await this.prefs.get(K_PHONE, '')) ?? '')
     this._userType = (String((await this.prefs.get(K_USER_TYPE, '')) ?? '')) as UserType | ''
+    this._avatarUrl = String((await this.prefs.get(K_AVATAR, '')) ?? '')
     this.inited = true
   }
 
@@ -69,6 +72,7 @@ export class UserStore {
   get nickname(): string { return this._nickname }
   get phone(): string { return this._phone }
   get userType(): UserType | '' { return this._userType }
+  get avatarUrl(): string { return this._avatarUrl }
 
   isLoggedIn(): boolean { return !!this._token && this._userId > 0 }
   static getToken(): string { return UserStore.instance.token }
@@ -88,6 +92,28 @@ export class UserStore {
       await this.prefs.put(K_USER_TYPE, this._userType)
       await this.prefs.flush()
     }
+    // 登录成功后拉取完整资料（含头像 URL；登录响应里不带头像）
+    try {
+      const me: MeResponse = await authApi.getMe()
+      this.applyMe(me)
+    } catch (_) { /* 忽略拉取失败，至少登录信息已落库 */ }
+  }
+
+  /** 用 /api/me 返回值更新本地昵称 / 手机号 / 头像（修改资料后调用）*/
+  async updateMe(me: MeResponse): Promise<void> {
+    this.applyMe(me)
+  }
+
+  private applyMe(me: MeResponse): void {
+    if (me.nickname !== undefined && me.nickname !== '') this._nickname = me.nickname
+    if (me.phone !== undefined) this._phone = me.phone
+    this._avatarUrl = me.avatarUrl ?? ''
+    if (this.prefs) {
+      this.prefs.put(K_NICK, this._nickname)
+      this.prefs.put(K_PHONE, this._phone)
+      this.prefs.put(K_AVATAR, this._avatarUrl)
+      this.prefs.flush()
+    }
   }
 
   /** 登出：先调后端接口把当前 token 加入 Redis 黑名单（成功/失败都清本地）*/
@@ -106,12 +132,14 @@ export class UserStore {
     this._nickname = ''
     this._phone = ''
     this._userType = ''
+    this._avatarUrl = ''
     if (this.prefs) {
       this.prefs.delete(K_TOKEN)
       this.prefs.delete(K_USER_ID)
       this.prefs.delete(K_NICK)
       this.prefs.delete(K_PHONE)
       this.prefs.delete(K_USER_TYPE)
+      this.prefs.delete(K_AVATAR)
       this.prefs.flushSync?.()
     }
     try {

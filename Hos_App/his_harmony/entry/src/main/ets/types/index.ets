@@ -158,6 +158,23 @@ export interface LoginUser {
   jti: string
 }
 
+/** /api/me 返回的当前登录用户完整信息（含昵称、头像、手机号） */
+export interface MeResponse {
+  /** 雪花大整数 ID，后端以字符串返回 */
+  userId: string | number
+  userType: UserType
+  nickname?: string
+  /** 头像 URL，未设置为空 */
+  avatarUrl?: string
+  phone?: string
+}
+
+/** PUT /api/me 修改个人资料请求（两个字段均可选，传哪个改哪个） */
+export interface UpdateMeRequest {
+  nickname?: string
+  avatarUrl?: string
+}
+
 export interface AppRegisterRequest {
   phone: string
   password: string
@@ -228,6 +245,8 @@ export interface PatientContact {
   name: string
   phone: string
   relation: Relation
+  /** 身份证脱敏值（如 110***********1234），未采集为空 */
+  idCardMasked?: string
   /** yyyy-MM-dd HH:mm:ss（部分后端版本可能是 ISO 格式）*/
   createdAt: string
   updatedAt?: string
@@ -238,6 +257,8 @@ export interface ContactRequest {
   phone: string
   /** 不传默认 SELF */
   relation?: Relation
+  /** 身份证号（18 位，末位可为 X），可选；后端加密存储且同账号下不允许重复 */
+  idCard?: string
 }
 
 // ============== 订单 ==============
