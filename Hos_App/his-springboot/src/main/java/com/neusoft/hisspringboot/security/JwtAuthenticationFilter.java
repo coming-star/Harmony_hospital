@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,6 +19,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
@@ -41,13 +43,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             LoginUser loginUser = jwtUtil.parseToken(authorization.substring(7));
 
-            if (tokenBlacklistService.isBlacklisted(loginUser.jti())) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json;charset=UTF-8");
-                response.getWriter().write(
-                        "{\"code\":401,\"message\":\"Token已登出\",\"data\":null}"
-                );
-                return;
+            // Redis 黑名单检查：异常时降级放行，避免 Redis 故障导致所有已认证请求 500
+            try {
+                if (tokenBlacklistService.isBlacklisted(loginUser.jti())) {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write(
+                            "{\"code\":401,\"message\":\"Token已登出\",\"data\":null}"
+                    );
+                    return;
+                }
+            } catch (Exception e) {
+                log.warn("Redis黑名单检查失败，降级放行: {}", e.getMessage());
             }
 
             UsernamePasswordAuthenticationToken authentication =
