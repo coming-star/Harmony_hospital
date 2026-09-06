@@ -1,5 +1,6 @@
 package com.neusoft.hisspringboot.config;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.cache.CacheManager;
@@ -56,6 +57,13 @@ public class RedisConfig {
     private GenericJackson2JsonRedisSerializer jsonSerializer() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
+        // 关键：开启全类型信息（EVERYTHING）。record 是 final 类，默认不写 @class，
+        // 反序列化时 List<DepartmentTreeNode> 会被还原成 List<Map>，强转即 ClassCastException。
+        mapper.activateDefaultTyping(
+                mapper.getPolymorphicTypeValidator(),
+                ObjectMapper.DefaultTyping.EVERYTHING,
+                JsonTypeInfo.As.PROPERTY
+        );
         return new GenericJackson2JsonRedisSerializer(mapper);
     }
 }
