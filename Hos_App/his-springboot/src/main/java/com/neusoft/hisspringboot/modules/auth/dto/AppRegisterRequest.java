@@ -14,10 +14,10 @@ public record AppRegisterRequest(
         @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确")
         String phone,
 
-        @Schema(description = "登录密码（8~64 位）", example = "12345678",
+        @Schema(description = "登录密码（8~16 位）", example = "12345678",
                 requiredMode = Schema.RequiredMode.REQUIRED)
         @NotBlank(message = "密码不能为空")
-        @Size(min = 8, max = 64, message = "密码长度应为8到64位")
+        @Size(min = 8, max = 16, message = "密码长度应为8到16位")
         String password,
 
         @Schema(description = "昵称", example = "赵小明", requiredMode = Schema.RequiredMode.REQUIRED)

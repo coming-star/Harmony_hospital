@@ -13,7 +13,7 @@ public record AdminLoginRequest(
 
         @Schema(description = "登录密码", example = "admin123", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotBlank(message = "密码不能为空")
-        @Size(min = 6, max = 64, message = "密码长度不合法")
+        @Size(min = 6, max = 16, message = "密码长度应为6到16位")
         String password
 ) {
 }

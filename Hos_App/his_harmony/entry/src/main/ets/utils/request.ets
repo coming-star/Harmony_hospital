@@ -14,7 +14,7 @@ import { showToast } from './toast'
  *  预览器用 127.0.0.1:8081；真机改成电脑局域网 IP:8081（如 http://192.168.1.100:8081）；
  *  Android 模拟器用 10.0.2.2:8081。后端端口见 application.yml 的 server.port。 */
 // export const BASE_URL = 'http://127.0.0.1:8081'
-export const BASE_URL = 'http://10.210.34.7:8081'
+export const BASE_URL = 'http://10.0.2.2:8081'
 
 /** 业务错误码 → 中文文案（与后端 ErrorCode 枚举一一对应）*/
 function bizMsg(code: number): string {

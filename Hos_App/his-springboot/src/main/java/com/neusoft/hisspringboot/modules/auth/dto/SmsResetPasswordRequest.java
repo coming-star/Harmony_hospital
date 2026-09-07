@@ -20,7 +20,7 @@ public record SmsResetPasswordRequest(
 
         @Schema(description = "新密码", example = "12345678", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotBlank(message = "新密码不能为空")
-        @Size(min = 8, max = 64, message = "密码长度应为8到64位")
+        @Size(min = 8, max = 16, message = "密码长度应为8到16位")
         String newPassword
 ) {
 }

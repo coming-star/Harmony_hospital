@@ -94,7 +94,9 @@ public class OrderService {
 
     @Transactional
     public OrderDetail createOrder(Long userId, CreateOrderRequest request) {
-        // ============ 限流：每分钟每个用户最多 5 次挂号请求 ============
+        // ============ 防超卖第①层：Redis 计数限流 ============
+        // Key: reg:limit:{userId}:{yyyyMMddHHmm}，INCR 后 60 秒自动过期；
+        // 每用户每分钟最多 5 次下单请求，超过直接拒绝，防止刷号/误触高频请求压到数据库。
         String minuteKey = LocalDateTime.now()
                 .format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"));
         String limitKey = REG_LIMIT_PREFIX + userId + ":" + minuteKey;
@@ -109,7 +111,10 @@ public class OrderService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "预约时段不存在");
         }
 
-        // ============ Redis 分布式锁防重复挂号：同一就诊人 + 同一医生 + 同一日期 + 同一时段 ============
+        // ============ 防超卖第②层：Redis 分布式锁（SETNX） ============
+        // Key: reg:lock:{就诊人}:{医生}:{就诊日期}:{时段}，30 秒过期；
+        // 防止同一就诊人对同一医生同一时段并发重复下单（如双击/重试）。
+        // 锁值存 UUID，释放时校验是自己的锁才删，避免误删别人的锁。
         String lockValue = UUID.randomUUID().toString();
         String lockKey = REG_LOCK_PREFIX
                 + request.contactId() + ":"
@@ -143,6 +148,9 @@ public class OrderService {
     }
 
     private OrderDetail doCreateOrder(Long userId, CreateOrderRequest request) {
+        // ============ 防超卖第③层：幂等键查重 ============
+        // 客户端每次下单生成一个 UUID 作为 idempotencyKey，后端按 (userId, idempotencyKey) 查重；
+        // 网络重试/重复点击不会产生第二笔订单，直接返回首次创建的订单。
         RegistrationOrder existing = orderMapper.selectOne(
                 new LambdaQueryWrapper<RegistrationOrder>()
                         .eq(RegistrationOrder::getUserId, userId)
@@ -169,6 +177,10 @@ public class OrderService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "预约时段不存在");
         }
 
+        // ============ 防超卖第④层：数据库乐观锁条件扣号（最终兜底） ============
+        // 原子 UPDATE：余量 -1、版本 +1，条件带 status='OPEN' AND remaining_quota>0 AND version=查到的版本号；
+        // 并发下只有一个请求 updatedRows=1 成功，其余 updatedRows=0 抛 SLOT_SOLD_OUT"已约满"。
+        // 不会出现超卖，也不需要"先查余号再改"的竞态写法。
         int updatedRows = scheduleSlotMapper.update(null,
                 new LambdaUpdateWrapper<ScheduleSlot>()
                         .setSql("remaining_quota = remaining_quota - 1, version = version + 1")
