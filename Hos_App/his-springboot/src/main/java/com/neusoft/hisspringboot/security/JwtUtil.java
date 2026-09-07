@@ -14,32 +14,39 @@ import java.util.Date;
 public class JwtUtil {
 
     @Value("${app.jwt.secret}")
-    private String secret;
+    private String secret;          // HMAC-SHA 签名密钥，配置在 application.yml
 
     @Value("${app.jwt.expire-hours}")
-    private long expireHours;
+    private long expireHours;       // token 有效期（小时），配置在 application.yml
 
+    /**
+     * 生成 JWT：payload = { jti(唯一ID), subject(userId), claim(userType), 签发时间, 过期时间 }
+     * 签名算法 = HS256（HMAC-SHA256），密钥从配置读取
+     */
     public String createToken(Long userId, String userType) {
         Date now = new Date();
         Date expireAt = new Date(now.getTime() + expireHours * 60 * 60 * 1000);
 
         return Jwts.builder()
-                .id(java.util.UUID.randomUUID().toString())
-                .subject(String.valueOf(userId))
-                .claim("userType", userType)
-                .issuedAt(now)
-                .expiration(expireAt)
-                .signWith(secretKey())
-                .compact();
+                .id(java.util.UUID.randomUUID().toString())   // jti：token 唯一标识，用于登出拉黑
+                .subject(String.valueOf(userId))               // sub：用户 ID
+                .claim("userType", userType)                  // 自定义声明：用户角色（PATIENT/ADMIN）
+                .issuedAt(now)                                 // iat：签发时间
+                .expiration(expireAt)                          // exp：过期时间
+                .signWith(secretKey())                         // 用密钥签名，防篡改
+                .compact();                                    // 拼成 xxx.yyy.zzz 三段式字符串
     }
 
+    /**
+     * 解析 JWT：验证签名 + 提取 payload，签名不匹配或已过期会抛 JwtException
+     */
     public LoginUser parseToken(String token) {
         Claims claims = parseClaims(token);
 
         return new LoginUser(
-                Long.valueOf(claims.getSubject()),
-                claims.get("userType", String.class),
-                claims.getId()
+                Long.valueOf(claims.getSubject()),              // userId
+                claims.get("userType", String.class),           // userType
+                claims.getId()                                  // jti（用于黑名单检查）
         );
     }
 

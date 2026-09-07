@@ -44,23 +44,30 @@ public class SmsCodeService {
      * 发送验证码（本地模拟：仅打印日志）。先做 60 秒冷却与每日上限双重限流。
      */
     public void sendCode(String phone, String scene) {
+        // —— 第①层防刷：60 秒冷却，同一手机号同一用途 60 秒内只能发一次 ——
         String cooldownKey = String.format(COOLDOWN_KEY, scene, phone);
         if (Boolean.TRUE.equals(redisTemplate.hasKey(cooldownKey))) {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "发送太频繁，请 60 秒后再试");
         }
 
+        // —— 第②层防刷：每日上限，同一手机号同一用途每天最多 10 条 ——
         String dailyKey = String.format(DAILY_KEY, scene, phone);
         Long todayCount = redisTemplate.opsForValue().increment(dailyKey);
         if (todayCount != null && todayCount == 1) {
-            redisTemplate.expire(dailyKey, Duration.ofDays(1));
+            redisTemplate.expire(dailyKey, Duration.ofDays(1)); // 首次计数设 1 天过期
         }
         if (todayCount != null && todayCount > DAILY_LIMIT) {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "今日验证码发送次数已达上限，请明天再试");
         }
 
+        // —— 生成 6 位随机验证码（SecureRandom 防可预测）——
         String code = String.format("%06d", random.nextInt(1_000_000));
+
+        // —— 存 Redis：验证码 5 分钟有效 ——
         redisTemplate.opsForValue().set(String.format(CODE_KEY, scene, phone), code, CODE_TTL);
+        // 写冷却标记（60 秒后自动过期）
         redisTemplate.opsForValue().set(cooldownKey, "1", COOLDOWN_TTL);
+        // 清掉之前的失败计数（新验证码生效，旧失败计数无意义）
         redisTemplate.delete(String.format(FAIL_KEY, scene, phone));
 
         // 本地模拟短信通道：真实项目替换为阿里云/腾讯云短信 SDK 调用
@@ -74,17 +81,20 @@ public class SmsCodeService {
         String codeKey = String.format(CODE_KEY, scene, phone);
         String saved = redisTemplate.opsForValue().get(codeKey);
 
+        // 验证码不存在 = 已过期或从未发送
         if (saved == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "验证码已过期，请重新获取");
         }
 
         if (!saved.equals(code)) {
+            // —— 第③层防刷：错误 5 次作废验证码 ——
             String failKey = String.format(FAIL_KEY, scene, phone);
             Long fails = redisTemplate.opsForValue().increment(failKey);
             if (fails != null && fails == 1) {
-                redisTemplate.expire(failKey, CODE_TTL);
+                redisTemplate.expire(failKey, CODE_TTL); // 失败计数 5 分钟后自动清零
             }
             if (fails != null && fails >= MAX_FAIL_TIMES) {
+                // 错误满 5 次：删除验证码 + 失败计数，强制重新获取
                 redisTemplate.delete(codeKey);
                 redisTemplate.delete(failKey);
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "错误次数过多，验证码已作废，请重新获取");
@@ -92,6 +102,7 @@ public class SmsCodeService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "验证码错误");
         }
 
+        // —— 验证通过：一次性消费（用完即删，防重放）——
         redisTemplate.delete(codeKey);
         redisTemplate.delete(String.format(FAIL_KEY, scene, phone));
     }

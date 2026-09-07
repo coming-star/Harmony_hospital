@@ -8,11 +8,11 @@
 
 ## 1. 为什么要引入 RocketMQ
 
-| 原方案 | 问题 | 现方案 |
-| --- | --- | --- |
-| `@Scheduled` 定时任务每 60 秒扫描过期待支付订单 | 最长 60 秒延迟；扫描空转浪费 | 下单成功发**延迟消息**，到期精准投递触发取消 |
-| 订单状态变更（支付成功/取消/超时）无事件 | 患者只能主动刷新才能感知 | 订单状态变更发布**事件消息**，消息中心消费后落库站内信 |
-| 下单后一直不支付无任何提醒 | 患者容易忘记支付导致号源被超时释放 | 下单成功同时发 **5 分钟延迟消息**，到期仍未支付则推「请尽快完成支付」站内信 |
+| 原方案                              | 问题                | 现方案                                       |
+| -------------------------------- | ----------------- | ----------------------------------------- |
+| `@Scheduled` 定时任务每 60 秒扫描过期待支付订单 | 最长 60 秒延迟；扫描空转浪费  | 下单成功发**延迟消息**，到期精准投递触发取消                  |
+| 订单状态变更（支付成功/取消/超时）无事件            | 患者只能主动刷新才能感知      | 订单状态变更发布**事件消息**，消息中心消费后落库站内信             |
+| 下单后一直不支付无任何提醒                    | 患者容易忘记支付导致号源被超时释放 | 下单成功同时发 **5 分钟延迟消息**，到期仍未支付则推「请尽快完成支付」站内信 |
 
 **兜底设计**：RocketMQ 未启动/发送失败只打 warn 日志，订单主流程不受影响；定时兜底任务降频为 **5 分钟一次**继续扫描（超时取消 + 未支付提醒），订单事件在 MQ 不可用时由 `publishEventWithFallback` **直接落库站内信**，双通道保证超时取消与消息通知最终一定执行。
 
@@ -22,15 +22,15 @@
 
 ### 2.1 下载与解压
 
-1. 下载 Binary 包：https://rocketmq.apache.org/download → `rocketmq-all-5.3.0-bin-release.zip`
+1. 下载 Binary 包：<https://rocketmq.apache.org/download> → `rocketmq-all-5.3.0-bin-release.zip`
 2. 解压到无空格路径，例如 `D:\rocketmq-5.3.0`
 
 ### 2.2 环境变量（系统变量）
 
-| 变量名 | 值 |
-| --- | --- |
+| 变量名             | 值                   |
+| --------------- | ------------------- |
 | `ROCKETMQ_HOME` | `D:\rocketmq-5.3.0` |
-| `NAMESRV_ADDR` | `localhost:9876` |
+| `NAMESRV_ADDR`  | `localhost:9876`    |
 
 > 若内存有限，先编辑 `bin\runserver.cmd` 与 `bin\runbroker.cmd`，把 JVM `-Xms/-Xmx/-Xmn` 调小（如 512m/512m/256m），否则默认配置启动会占 4G+ 内存。
 
@@ -72,6 +72,7 @@ rocketmq:
 ```
 
 **NameServer 未启动时应用仍可正常启动运行**，无需任何手动开关：
+
 - 生产者：所有发送均 try-catch 兜底，失败只打 warn 日志；
 - 消费者：通过 `RocketMQAvailableCondition`（config 包）在启动时探测 NameServer 端口（800ms 超时），**可达才注册消费者**；不可达则跳过消费者注册——否则消费者容器启动阶段会因连不上 NameServer 抛 RemotingConnectException 拖垮整个应用；
 - 不可达时的效果：超时取消完全由定时兜底任务（5 分钟）执行，订单事件不再产生站内信，其余功能不受影响。
@@ -139,12 +140,12 @@ OrderEventConsumer.onMessage()
 
 ### 5.2 消息类型与站内信对照
 
-| eventType | message.type | 站内信标题示例 |
-| --- | --- | --- |
-| PAY_SUCCESS | ORDER_PAY_SUCCESS | 预约成功 |
-| PATIENT_CANCEL | ORDER_CANCELLED | 订单已取消 |
-| ADMIN_CANCEL | ORDER_CANCELLED | 订单已取消 |
-| TIMEOUT_CANCEL | ORDER_TIMEOUT | 订单超时未支付已自动取消 |
+| eventType       | message.type        | 站内信标题示例      |
+| --------------- | ------------------- | ------------ |
+| PAY\_SUCCESS    | ORDER\_PAY\_SUCCESS | 预约成功         |
+| PATIENT\_CANCEL | ORDER\_CANCELLED    | 订单已取消        |
+| ADMIN\_CANCEL   | ORDER\_CANCELLED    | 订单已取消        |
+| TIMEOUT\_CANCEL | ORDER\_TIMEOUT      | 订单超时未支付已自动取消 |
 
 > 就诊提醒（`VISIT_REMINDER`，24h/3h）与未支付提醒（`PAYMENT_REMINDER`，下单 5 分钟未支付）由对应链路直接落库，不经过 `order_event_topic`，消息类型对照见链路三。
 
@@ -181,10 +182,10 @@ PaymentReminderConsumer.onMessage()
 
 ### 6.3 站内信类型对照（补充）
 
-| message.type | 触发时机 | dedup_key |
-| --- | --- | --- |
-| VISIT_REMINDER | 就诊前 24h / 3h（VisitReminderTask） | `{orderId}:REMIND_24H` / `{orderId}:REMIND_3H` |
-| PAYMENT_REMINDER | 下单 5 分钟仍未支付 | `PAYMENT_REMINDER:{orderId}` |
+| message.type      | 触发时机                            | dedup\_key                                     |
+| ----------------- | ------------------------------- | ---------------------------------------------- |
+| VISIT\_REMINDER   | 就诊前 24h / 3h（VisitReminderTask） | `{orderId}:REMIND_24H` / `{orderId}:REMIND_3H` |
+| PAYMENT\_REMINDER | 下单 5 分钟仍未支付                     | `PAYMENT_REMINDER:{orderId}`                   |
 
 ***
 
@@ -196,3 +197,4 @@ PaymentReminderConsumer.onMessage()
 4. 支付一笔订单 → 日志出现 `已发布订单状态事件 type=PAY_SUCCESS`，App 消息中心（我的 → 消息）出现"预约成功"站内信，红点数 +1；
 5. 创建订单后 5 分钟内不支付 → 消息中心出现"请尽快完成支付"提醒（`PAYMENT_REMINDER`）；此时再支付/取消，同订单不会出现第二条提醒；
 6. 关闭 RocketMQ 再重复第 2 步 → 只出现 warn 日志，订单照常创建；超时取消与未支付提醒由定时兜底任务（5 分钟）执行；支付/取消订单 → 消息中心仍会出现对应站内信（`publishEventWithFallback` 直接落库）。
+
